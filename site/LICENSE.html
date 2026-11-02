@@ -9,15 +9,34 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="./assets/style.css">
 </head>
-<body>
+<body class="">
+<a id="top"></a>
 <header class="topbar">
   <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
   <button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
   <span class="spacer"></span>
   <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
 </header>
-<div class="layout no-side">
-
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
 <main>
 
 <article class="ch">
@@ -27,8 +46,8 @@
   <p class="problem">本站在 <a href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a>
   的基础上做中文逐行讲解。代码片段逐字取自上游 commit <code>7226f55</code>（2026-10-27），
   版权归原作者，按 MIT License 使用；讲解文字为本站新增，按 CC BY 4.0 发布。</p>
-  <h2 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:30px 0 10px">上游 MIT 许可全文</h2>
-  <pre style="white-space:pre-wrap;font-size:13px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px">MIT License
+  <h2 class="sec-title">上游 MIT 许可全文</h2>
+  <pre class="license">MIT License
 
 Copyright (c) 2024 shareAI Lab
 

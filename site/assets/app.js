@@ -1,5 +1,7 @@
 /* 注释高亮 + 移动端目录抽屉 */
 (function () {
+  var links = [].slice.call(document.querySelectorAll('.side nav a, .toc-sheet nav a'));
+
   function rowsBetween(wrap, from, to) {
     return [].slice.call(wrap.querySelectorAll('.row')).filter(function (r) {
       var n = +r.dataset.line;
@@ -30,6 +32,52 @@
     });
   });
 
+
+  /* 单页完整教程：滚动高亮左侧目录 */
+  var hashLinks = links.filter(function (l) {
+    var h = l.getAttribute('href');
+    return h && h.charAt(0) === '#' && document.querySelector(h);
+  });
+  function markHash(id) {
+    hashLinks.forEach(function (l) {
+      var on = l.getAttribute('href') === '#' + id;
+      l.classList.toggle('active', on);
+      if (on) l.setAttribute('aria-current', 'true');
+      else l.removeAttribute('aria-current');
+    });
+  }
+  if (hashLinks.length) {
+    var ticking = false;
+    function updateActive() {
+      ticking = false;
+      var y = window.scrollY + 140;
+      var current = 'top';
+      hashLinks.forEach(function (l) {
+        var el = document.querySelector(l.getAttribute('href'));
+        if (!el) return;
+        var top = el.getBoundingClientRect().top + window.scrollY;
+        if (top <= y) current = l.getAttribute('href').slice(1);
+      });
+      markHash(current);
+    }
+    var lastTick = 0;
+    window.addEventListener('scroll', function () {
+      var now = Date.now();
+      if (now - lastTick < 80) return;
+      lastTick = now;
+      updateActive();
+    }, { passive: true });
+    window.addEventListener('resize', updateActive);
+    window.addEventListener('hashchange', function () {
+      if (location.hash) markHash(location.hash.slice(1));
+    });
+    hashLinks.forEach(function (l) {
+      l.addEventListener('click', function () {
+        markHash(l.getAttribute('href').slice(1));
+      });
+    });
+    updateActive();
+  }
   var btn = document.getElementById('tocBtn');
   var panel = document.getElementById('tocPanel');
   var closeBtn = document.getElementById('tocClose');

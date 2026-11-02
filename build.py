@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build the static site: index.html + one page per chapter + 404.
+"""Build the static site.
+
+- index.html : the complete tutorial in one page (sidebar + all 17 chapters)
+- sNN.html   : one page per chapter (deep links, sidebar + prev/next)
+- LICENSE.html, 404.html
 
 Usage:
     python3 build.py --src /path/to/learn-claude-code [--out site]
@@ -111,7 +115,7 @@ def kind_of(ch: dict) -> tuple[str, str]:
     return "核心节选 · 逐行", ""
 
 
-def chapter_fragment(src: Source, ch: dict) -> str:
+def chapter_fragment(src: Source, ch: dict, level: str = "h1") -> str:
     idea = "".join(f"<li>{esc(x)}</li>" for x in ch.get("idea", []))
     points = "".join(f'<div class="point"><b>{esc(t)}</b><p>{esc(d)}</p></div>'
                      for t, d in ch.get("points", []))
@@ -123,7 +127,7 @@ def chapter_fragment(src: Source, ch: dict) -> str:
     <span class="num">{ch['no']}</span>
     <div class="ch-title">
       <span class="flag {cls}">{label}</span>
-      <h1>{esc(ch['title'])}<small>{esc(ch['sub'])}</small></h1>
+      <{level}>{esc(ch['title'])}<small>{esc(ch['sub'])}</small></{level}>
       <p class="quote">{esc(ch['quote'])}</p>
     </div>
   </div>
@@ -136,7 +140,15 @@ def chapter_fragment(src: Source, ch: dict) -> str:
 </article>"""
 
 
-def nav_html(current: str | None) -> str:
+def nav_anchors() -> str:
+    items = ['<a href="#top"><span>00</span>导读</a>']
+    for ch in CHAPTERS:
+        items.append(f'<a href="#{ch["id"]}"><span>{ch["no"]}</span>{esc(ch["title"])}</a>')
+    items.append('<a href="#outro"><span>18</span>学完之后</a>')
+    return "\n".join(items)
+
+
+def nav_files(current: str | None) -> str:
     items = ['<a href="./index.html"><span>00</span>导读</a>']
     for ch in CHAPTERS:
         cur = ' aria-current="page"' if ch["id"] == current else ""
@@ -146,13 +158,13 @@ def nav_html(current: str | None) -> str:
     return "\n".join(items)
 
 
-def drawer_html(current: str | None) -> str:
+def drawer_html(nav: str) -> str:
     return f"""
 <div class="toc-panel" id="tocPanel" hidden>
   <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
     <button class="close" id="tocClose" aria-label="关闭目录">×</button>
     <h2>目录</h2>
-    <nav aria-label="章节目录（移动端）">{nav_html(current)}</nav>
+    <nav aria-label="章节目录（移动端）">{nav}</nav>
   </div>
 </div>"""
 
@@ -161,16 +173,17 @@ FOOTER = (
     f'<footer>本教程基于 <a href="{REPO}/tree/{COMMIT}" target="_blank" rel="noreferrer">'
     f'shareAI-lab/learn-claude-code</a> @ <code>{COMMIT_SHORT}</code>（{COMMIT_DATE}，MIT License）。'
     f'代码片段版权归原作者，讲解文字为本站新增。'
-    f'<a href="./LICENSE.html">许可与来源</a>。'
-    f'</footer>'
+    f'<a href="./LICENSE.html">许可与来源</a>。</footer>'
 )
 
 
-def page(title: str, desc: str, body: str, current: str | None, side: bool) -> str:
+def page(title: str, desc: str, body: str, nav: str | None = None,
+         body_class: str = "") -> str:
     sidebar = ""
-    if side:
+    if nav:
         sidebar = (f'<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录">'
-                   f'{nav_html(current)}</nav></aside>')
+                   f'{nav}</nav></aside>')
+    cls = "layout" + (" no-side" if not nav else "")
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -182,34 +195,36 @@ def page(title: str, desc: str, body: str, current: str | None, side: bool) -> s
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="./assets/style.css">
 </head>
-<body>
+<body class="{body_class}">
+<a id="top"></a>
 <header class="topbar">
   <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
   <button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
   <span class="spacer"></span>
   <a class="plain" href="{REPO}" target="_blank" rel="noreferrer">原仓库 ↗</a>
 </header>
-<div class="layout{' no-side' if not side else ''}">
+<div class="{cls}">
 {sidebar}
 <main>
 {body}
 </main>
 </div>
-{drawer_html(current)}
+{drawer_html(nav or nav_anchors())}
 <script src="./assets/app.js" defer></script>
 </body>
 </html>
 """
 
 
-def build_index() -> str:
+def build_index(src: Source) -> str:
     cards = []
     for ch in CHAPTERS:
         label, cls = kind_of(ch)
         cards.append(
-            f'<a class="card" href="./{ch["id"]}.html"><span class="no">CH {ch["no"]}</span>'
+            f'<a class="card" href="#{ch["id"]}"><span class="no">CH {ch["no"]}</span>'
             f'<h3>{esc(ch["title"])}</h3><p>{esc(ch["quote"])}</p>'
             f'<div class="kind {cls}">{label}</div></a>')
+    chapters = "\n".join(chapter_fragment(src, ch, level="h2") for ch in CHAPTERS)
     body = f"""
 <header class="hero">
   <div class="kicker">Learn Claude Code · 大白话版</div>
@@ -219,13 +234,14 @@ def build_index() -> str:
     <span>基于 commit {COMMIT_SHORT}</span><span>逐行 + 分段讲解</span></div>
 </header>
 {INTRO['html']}
-<h2 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:38px 0 0;font-weight:700">逐章阅读</h2>
+<h2 class="sec-title">逐章阅读</h2>
 <div class="cards">{''.join(cards)}</div>
+{chapters}
 <section class="outro" id="outro">{OUTRO}</section>
 {FOOTER}"""
     return page("Learn Claude Code · 大白话逐行教程",
-                f"按 commit {COMMIT_SHORT} 逐行讲解 learn-claude-code 的 17 章。",
-                body, None, side=False)
+                f"按 commit {COMMIT_SHORT} 逐行讲解 learn-claude-code 的 17 章，单页完整阅读。",
+                body, nav=nav_anchors(), body_class="full")
 
 
 def build_chapter(src: Source, idx: int, ch: dict) -> str:
@@ -236,11 +252,11 @@ def build_chapter(src: Source, idx: int, ch: dict) -> str:
                  f'{prev["no"]} {esc(prev["title"])}</a>' if prev else "<span></span>")
     pager.append(f'<a href="./{nxt["id"]}.html" style="text-align:right"><span class="lbl">下一章</span>'
                  f'{nxt["no"]} {esc(nxt["title"])}</a>' if nxt else
-                 '<a href="./index.html" style="text-align:right"><span class="lbl">回到</span>目录</a>')
+                 '<a href="./index.html" style="text-align:right"><span class="lbl">回到</span>完整教程</a>')
     pager.append("</nav>")
     body = chapter_fragment(src, ch) + "".join(pager) + FOOTER
     return page(f"{ch['no']} {ch['title']} · Learn Claude Code 大白话教程",
-                ch["problem"][:120], body, ch["id"], side=True)
+                ch["problem"][:120], body, nav=nav_files(ch["id"]))
 
 
 def build_license() -> str:
@@ -252,8 +268,8 @@ def build_license() -> str:
   <p class="problem">本站在 <a href="{REPO}" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a>
   的基础上做中文逐行讲解。代码片段逐字取自上游 commit <code>{COMMIT_SHORT}</code>（{COMMIT_DATE}），
   版权归原作者，按 MIT License 使用；讲解文字为本站新增，按 CC BY 4.0 发布。</p>
-  <h2 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:30px 0 10px">上游 MIT 许可全文</h2>
-  <pre style="white-space:pre-wrap;font-size:13px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px">MIT License
+  <h2 class="sec-title">上游 MIT 许可全文</h2>
+  <pre class="license">MIT License
 
 Copyright (c) 2024 shareAI Lab
 
@@ -278,7 +294,7 @@ SOFTWARE.</pre>
 </article>
 {FOOTER}"""
     return page("许可与来源 · Learn Claude Code 大白话教程",
-                "上游 MIT 许可全文与本站内容许可说明。", body, None, side=False)
+                "上游 MIT 许可全文与本站内容许可说明。", body, nav=nav_files(None))
 
 
 def main() -> None:
@@ -300,7 +316,7 @@ def main() -> None:
         shutil.copy2(HERE / "assets" / f, out / "assets" / f)
 
     src = Source(src_root)
-    pages = {"index.html": build_index()}
+    pages = {"index.html": build_index(src)}
     for i, ch in enumerate(CHAPTERS):
         pages[f"{ch['id']}.html"] = build_chapter(src, i, ch)
     pages["LICENSE.html"] = build_license()

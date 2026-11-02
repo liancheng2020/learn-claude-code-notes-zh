@@ -60,6 +60,10 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .tbl th,.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .tbl tr:last-child td{border-bottom:0}
 .tbl th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);background:var(--code-bg)}
+.sec-title{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:38px 0 6px;font-weight:700}
+.full .ch{margin-top:64px;padding-top:26px;border-top:1px solid var(--line)}
+.full .ch-head{padding-top:0}
+.license{white-space:pre-wrap;font-size:13px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin:26px 0}
 .card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;
   padding:16px 18px;color:var(--ink);transition:transform .12s ease,border-color .12s ease}
@@ -69,12 +73,12 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .card p{margin:0;font-size:13px;color:var(--mid);line-height:1.6}
 .card .kind{margin-top:10px;font-size:11px;color:var(--mid)}
 .card .kind.ok{color:var(--accent)}
-.ch{margin-top:8px}
+.ch{margin-top:8px;scroll-margin-top:72px}
 .ch-head{display:flex;gap:18px;align-items:flex-start;padding-top:6px}
 .num{font-family:var(--mono);font-size:13px;color:var(--accent);background:var(--accent-soft);
   border:1px solid var(--line);border-radius:10px;padding:2px 9px;margin-top:6px;flex:none}
-.ch-title h1{margin:0;font-size:28px;line-height:1.35;letter-spacing:-.01em}
-.ch-title h1 small{display:block;font-size:12.5px;font-weight:500;color:var(--mid);
+.ch-title h1,.ch-title h2{margin:0;font-size:28px;line-height:1.35;letter-spacing:-.01em;font-weight:700}
+.ch-title h1 small,.ch-title h2 small{display:block;font-size:12.5px;font-weight:500;color:var(--mid);
   letter-spacing:.12em;text-transform:uppercase;margin-top:6px}
 .flag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);
   background:var(--accent-soft);border:1px solid var(--line);border-radius:999px;

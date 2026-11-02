@@ -9,7 +9,8 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="./assets/style.css">
 </head>
-<body>
+<body class="">
+<a id="top"></a>
 <header class="topbar">
   <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
   <button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
@@ -53,7 +54,7 @@
   <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>判断器独立于执行者</b><p>另起一次调用，不带工具，只读 transcript 做判断。</p></div><div class="point"><b>但它仍是模型</b><p>判断可能出错：被漂亮的说法骗过，或者对证据理解偏差。不能等同于确定性的测试验收。</p></div><div class="point"><b>条件要可判定</b><p>用命令退出码、文件是否存在、测试是否通过，而不是形容词。</p></div><div class="point"><b>有止损但无 token 硬上限</b><p>连续 block 超过 block_cap 会返回 limit；代码里没有「花到多少钱就停」的硬约束。</p></div><div class="point"><b>裁决要留痕</b><p>每次判定都记录，才能调试「它为什么一直说没完成」。</p></div></div></div>
   <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>把独立判断器当成「客观真理」——它只是换了一次模型调用，仍会误判。</li><li>目标本身不可判定（「体验要好」），判断器只能瞎猜。</li><li>完全依赖它决定收工，却没有外部测试或人工验收兜底。</li></ul></div>
   <div class="try"><h2>动手改一改</h2><p>设一个「pytest 必须全绿」的目标，故意留一个失败测试。验收：判断器连续返回 block，模型回去改代码；等测试真的全绿后，下一次判断返回 achieved。再把目标改成「代码写得优雅」，观察它给出的理由有多主观。</p></div>
-</article><nav class="pager" aria-label="上下章"><a href="./s16.html"><span class="lbl">上一章</span>16 单步交给模型，编排交给脚本</a><a href="./index.html" style="text-align:right"><span class="lbl">回到</span>目录</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</article><nav class="pager" aria-label="上下章"><a href="./s16.html"><span class="lbl">上一章</span>16 单步交给模型，编排交给脚本</a><a href="./index.html" style="text-align:right"><span class="lbl">回到</span>完整教程</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
 </main>
 </div>
 
