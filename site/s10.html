@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="s05 的清单只在内存里，进程一挂就没了；而且没有依赖关系，A 还没做完就去做 B。这一章把任务写成文件，加上状态和依赖——但注意它没有并发保护。">
+<meta name="color-scheme" content="light dark">
+<title>10 任务落盘，进度可恢复 · Learn Claude Code 大白话教程</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
+  <span class="ver">7226f55</span>
+  <span class="spacer"></span>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+</header>
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html" aria-current="page"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
+<main>
+
+<article class="ch" id="s10">
+  <div class="ch-head">
+    <span class="num">10</span>
+    <div class="ch-title">
+      <span class="flag ">进阶 · 关键片段</span>
+      <h1>任务落盘，进度可恢复<small>Task System</small></h1>
+      <p class="quote">依赖「未完成」才阻塞，列表非空不算</p>
+    </div>
+  </div>
+  <p class="problem"><b>解决什么问题 · </b>s05 的清单只在内存里，进程一挂就没了；而且没有依赖关系，A 还没做完就去做 B。这一章把任务写成文件，加上状态和依赖——但注意它没有并发保护。</p>
+  <div class="idea"><h2>思路</h2><ol><li>每个任务一个 JSON 文件，状态只有 pending → in_progress → completed；</li><li>blockedBy 存依赖 id，认领前检查的是「这些依赖里还有没有没完成的」；</li><li>id 用随机 hex，靠「独占创建」保证不撞名；</li><li>完成任务时校验状态和 owner；这一版没有文件锁。</li></ol></div>
+  <div class="code-wrap"><div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="file">s10_task_system/code.py · L108–129</span><a href="https://github.com/shareAI-lab/learn-claude-code/blob/7226f555d48900076eba126acf37c9ed5f002b5d/s10_task_system/code.py#L108-L129" target="_blank" rel="noreferrer">GitHub 原文 ↗</a></div><div class="code" id="s10-0"><div class="row" data-line="108"><span class="ln">108</span><span class="tx">    def create(self, subject: str, description: str = "") -&gt; Task:</span></div><div class="ann" data-from="108" data-to="108" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 108 到 108 行，回车固定高亮"><span class="ic">注</span><p>建任务 = 在 tasks/ 下写一个 JSON 文件。没有数据库，文件就是数据库。</p></div><div class="row" data-line="109"><span class="ln">109</span><span class="tx">        subject = subject.strip()</span></div><div class="row" data-line="110"><span class="ln">110</span><span class="tx">        if not subject:</span></div><div class="row" data-line="111"><span class="ln">111</span><span class="tx">            raise ValueError("Task subject cannot be empty")</span></div><div class="row" data-line="112"><span class="ln">112</span><span class="tx">&nbsp;</span></div><div class="row" data-line="113"><span class="ln">113</span><span class="tx">        self._root(create=True)</span></div><div class="row" data-line="114"><span class="ln">114</span><span class="tx">        for _ in range(100):</span></div><div class="ann" data-from="109" data-to="114" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 109 到 114 行，回车固定高亮"><span class="ic">注</span><p>撞名就重试，最多 100 次。随机 id 撞名概率极低，但不能假设它不存在。</p></div><div class="row" data-line="115"><span class="ln">115</span><span class="tx">            task = Task(</span></div><div class="row" data-line="116"><span class="ln">116</span><span class="tx">                id=f"task_{secrets.token_hex(4)}",</span></div><div class="row" data-line="117"><span class="ln">117</span><span class="tx">                subject=subject,</span></div><div class="row" data-line="118"><span class="ln">118</span><span class="tx">                description=description,</span></div><div class="row" data-line="119"><span class="ln">119</span><span class="tx">                status="pending",</span></div><div class="row" data-line="120"><span class="ln">120</span><span class="tx">                owner=None,</span></div><div class="row" data-line="121"><span class="ln">121</span><span class="tx">                blockedBy=[],</span></div><div class="row" data-line="122"><span class="ln">122</span><span class="tx">            )</span></div><div class="row" data-line="123"><span class="ln">123</span><span class="tx">            try:</span></div><div class="row" data-line="124"><span class="ln">124</span><span class="tx">                with self._path(task.id, create_root=True).open(</span></div><div class="row" data-line="125"><span class="ln">125</span><span class="tx">                    "x", encoding="utf-8"</span></div><div class="row" data-line="126"><span class="ln">126</span><span class="tx">                ) as handle:</span></div><div class="row" data-line="127"><span class="ln">127</span><span class="tx">                    json.dump(asdict(task), handle, indent=2)</span></div><div class="row" data-line="128"><span class="ln">128</span><span class="tx">                return task</span></div><div class="row" data-line="129"><span class="ln">129</span><span class="tx">            except FileExistsError:</span></div><div class="ann" data-from="115" data-to="129" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 115 到 129 行，回车固定高亮"><span class="ic">注</span><p>用 "x" 模式打开 = 文件已存在就报错，这是原子占位，天然防同 id 覆盖。</p></div></div></div>
+<div class="code-wrap"><div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="file">s10_task_system/code.py · L240–248</span><a href="https://github.com/shareAI-lab/learn-claude-code/blob/7226f555d48900076eba126acf37c9ed5f002b5d/s10_task_system/code.py#L240-L248" target="_blank" rel="noreferrer">GitHub 原文 ↗</a></div><div class="code" id="s10-1"><div class="row" data-line="240"><span class="ln">240</span><span class="tx">def claim_task(task_id: str, owner: str = "agent") -&gt; str:</span></div><div class="ann" data-from="240" data-to="240" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 240 到 240 行，回车固定高亮"><span class="ic">注</span><p>认领只做两件检查：状态是不是 pending、依赖里有没有没完成的。没有锁，也没有 owner 冲突检查。</p></div><div class="row" data-line="241"><span class="ln">241</span><span class="tx">    task = load_task(task_id)</span></div><div class="row" data-line="242"><span class="ln">242</span><span class="tx">    if task.status != "pending":</span></div><div class="row" data-line="243"><span class="ln">243</span><span class="tx">        return f"Task {task_id} is {task.status}, cannot claim"</span></div><div class="row" data-line="244"><span class="ln">244</span><span class="tx">    dependencies = incomplete_dependencies(task)</span></div><div class="row" data-line="245"><span class="ln">245</span><span class="tx">    if dependencies:</span></div><div class="ann" data-from="241" data-to="245" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 241 到 245 行，回车固定高亮"><span class="ic">注</span><p>注意这个变量是 incomplete_dependencies 的结果：只有「未完成的依赖」才挡人。blockedBy 非空但都完成了，照样能开工。</p></div><div class="row" data-line="246"><span class="ln">246</span><span class="tx">        return f"Blocked by: {dependencies}"</span></div><div class="row" data-line="247"><span class="ln">247</span><span class="tx">    task.owner = owner</span></div><div class="row" data-line="248"><span class="ln">248</span><span class="tx">    task.status = "in_progress"</span></div><div class="ann" data-from="246" data-to="248" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 246 到 248 行，回车固定高亮"><span class="ic">注</span><p>状态单向流转，没有取消、没有退回。想重做只能再建一个任务。</p></div></div></div>
+  <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>文件即存储</b><p>一个任务一个 JSON，可视化、可手改、可 diff。</p></div><div class="point"><b>依赖看「完成没」</b><p>blockedBy 里有值不代表被挡；只有其中存在未完成（或找不到）的任务才阻塞。</p></div><div class="point"><b>状态单向</b><p>pending → in_progress → completed，没有回退和取消。</p></div><div class="point"><b>没有并发保护</b><p>两个进程同时 claim 同一个任务，可能都成功——锁是 s13 才加的。</p></div><div class="point"><b>完成才校验 owner</b><p>complete_task 会检查 status 和 owner；claim 时不检查 owner。</p></div></div></div>
+  <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>把「blockedBy 非空」当成「不能开工」——实际只挡未完成的依赖。</li><li>在多进程/多 agent 场景直接用它：没有锁，会重复认领。</li><li>依赖的任务文件被删了：加载失败也算「未完成」，于是一直被挡住，直到文件恢复。</li><li>手改 JSON 改坏了结构，load 时会直接抛错。</li></ul></div>
+  <div class="try"><h2>动手改一改</h2><p>用 create_task 建 A、B，用 update_task 让 B 依赖 A。先 claim_task(B)，验收：返回 `Blocked by: [...]`。再 complete_task(A)，然后 claim_task(B)，验收：返回 `Claimed ...`。最后故意把 A 的 JSON 删掉，看 B 是否又被挡住。</p></div>
+</article><nav class="pager" aria-label="上下章"><a href="./s09.html"><span class="lbl">上一章</span>09 跨会话记住该记的</a><a href="./s11.html" style="text-align:right"><span class="lbl">下一章</span>11 慢操作丢后台</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</main>
+</div>
+
+<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
+    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
+    <h2>目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html" aria-current="page"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

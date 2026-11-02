@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="每接一个外部服务（文档、部署平台），就要手写工具定义、参数格式、调用代码。接十个就乱成一锅粥。">
+<meta name="color-scheme" content="light dark">
+<title>14 工具改由外部提供 · Learn Claude Code 大白话教程</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
+  <span class="ver">7226f55</span>
+  <span class="spacer"></span>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+</header>
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html" aria-current="page"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
+<main>
+
+<article class="ch" id="s14">
+  <div class="ch-head">
+    <span class="num">14</span>
+    <div class="ch-title">
+      <span class="flag ">进阶 · 关键片段</span>
+      <h1>工具改由外部提供<small>MCP</small></h1>
+      <p class="quote">内存版 mock：清单 + 宿主策略，没有真实传输</p>
+    </div>
+  </div>
+  <p class="problem"><b>解决什么问题 · </b>每接一个外部服务（文档、部署平台），就要手写工具定义、参数格式、调用代码。接十个就乱成一锅粥。</p>
+  <div class="idea"><h2>思路</h2><ol><li>服务端声明「我有哪些工具、参数是什么」；</li><li>宿主负责连接、改名、加权限策略，再并进工具池；</li><li>调用统一走 call_tool，异常收成字符串；</li><li>要不要审批由宿主配置决定，不信任服务端的描述。</li></ol></div>
+  <div class="code-wrap"><div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="file">s14_mcp_plugin/code.py · L170–209</span><a href="https://github.com/shareAI-lab/learn-claude-code/blob/7226f555d48900076eba126acf37c9ed5f002b5d/s14_mcp_plugin/code.py#L170-L209" target="_blank" rel="noreferrer">GitHub 原文 ↗</a></div><div class="code" id="s14-0"><div class="row" data-line="170"><span class="ln">170</span><span class="tx">class MCPClient:</span></div><div class="ann" data-from="170" data-to="170" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 170 到 170 行，回车固定高亮"><span class="ic">注</span><p>这一章的 MCP 是「内存里的替身」：模拟 tools/list 与 tools/call，没有真实的 stdio/HTTP 连接。</p></div><div class="row" data-line="171"><span class="ln">171</span><span class="tx">    """Small in-process stand-in for MCP tools/list and tools/call."""</span></div><div class="row" data-line="172"><span class="ln">172</span><span class="tx">&nbsp;</span></div><div class="row" data-line="173"><span class="ln">173</span><span class="tx">    def __init__(self, name: str):</span></div><div class="row" data-line="174"><span class="ln">174</span><span class="tx">        self.name = name</span></div><div class="row" data-line="175"><span class="ln">175</span><span class="tx">        self.tools: list[dict] = []</span></div><div class="row" data-line="176"><span class="ln">176</span><span class="tx">        self._handlers: dict[str, callable] = {}</span></div><div class="row" data-line="177"><span class="ln">177</span><span class="tx">&nbsp;</span></div><div class="row" data-line="178"><span class="ln">178</span><span class="tx">    def register(self, tool_defs: list[dict], handlers: dict[str, callable]):</span></div><div class="ann" data-from="171" data-to="178" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 171 到 178 行，回车固定高亮"><span class="ic">注</span><p>注册时先校验：名字非空、不重复、每个工具都有实现。第三方的东西，进门先体检。</p></div><div class="row" data-line="179"><span class="ln">179</span><span class="tx">        names = [tool.get("name") for tool in tool_defs]</span></div><div class="row" data-line="180"><span class="ln">180</span><span class="tx">        if any(not isinstance(name, str) or not name for name in names):</span></div><div class="row" data-line="181"><span class="ln">181</span><span class="tx">            raise ValueError("Every MCP tool needs a non-empty name")</span></div><div class="row" data-line="182"><span class="ln">182</span><span class="tx">        if len(set(names)) != len(names):</span></div><div class="row" data-line="183"><span class="ln">183</span><span class="tx">            raise ValueError(f"Duplicate MCP tool name on server {self.name!r}")</span></div><div class="row" data-line="184"><span class="ln">184</span><span class="tx">        missing = [name for name in names if name not in handlers]</span></div><div class="row" data-line="185"><span class="ln">185</span><span class="tx">        if missing:</span></div><div class="row" data-line="186"><span class="ln">186</span><span class="tx">            raise ValueError(f"Missing MCP handlers: {', '.join(missing)}")</span></div><div class="row" data-line="187"><span class="ln">187</span><span class="tx">        self.tools = list(tool_defs)</span></div><div class="row" data-line="188"><span class="ln">188</span><span class="tx">        self._handlers = dict(handlers)</span></div><div class="row" data-line="189"><span class="ln">189</span><span class="tx">&nbsp;</span></div><div class="row" data-line="190"><span class="ln">190</span><span class="tx">    def call_tool(self, tool_name: str, args: dict) -&gt; str:</span></div><div class="ann" data-from="179" data-to="190" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 179 到 190 行，回车固定高亮"><span class="ic">注</span><p>调用只做一件事：按名找 handler，展开参数，把异常收成字符串。</p></div><div class="row" data-line="191"><span class="ln">191</span><span class="tx">        handler = self._handlers.get(tool_name)</span></div><div class="row" data-line="192"><span class="ln">192</span><span class="tx">        if not handler:</span></div><div class="row" data-line="193"><span class="ln">193</span><span class="tx">            return f"MCP error: unknown tool '{tool_name}'"</span></div><div class="row" data-line="194"><span class="ln">194</span><span class="tx">        try:</span></div><div class="row" data-line="195"><span class="ln">195</span><span class="tx">            return str(handler(**args))</span></div><div class="row" data-line="196"><span class="ln">196</span><span class="tx">        except Exception as exc:</span></div><div class="row" data-line="197"><span class="ln">197</span><span class="tx">            return f"MCP error: {type(exc).__name__}: {exc}"</span></div><div class="ann" data-from="191" data-to="197" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 191 到 197 行，回车固定高亮"><span class="ic">注</span><p>不能把第三方异常直接抛进主循环——那会让整个 agent 崩掉，而不是让模型看到一条错误。</p></div><div class="row" data-line="198"><span class="ln">198</span><span class="tx">&nbsp;</span></div><div class="row" data-line="199"><span class="ln">199</span><span class="tx">&nbsp;</span></div><div class="row" data-line="200"><span class="ln">200</span><span class="tx">mcp_clients: dict[str, MCPClient] = {}</span></div><div class="row" data-line="201"><span class="ln">201</span><span class="tx">mcp_tool_policies: dict[str, str] = {}</span></div><div class="row" data-line="202"><span class="ln">202</span><span class="tx">_DISALLOWED_CHARS = re.compile(r"[^a-zA-Z0-9_-]")</span></div><div class="row" data-line="203"><span class="ln">203</span><span class="tx">&nbsp;</span></div><div class="row" data-line="204"><span class="ln">204</span><span class="tx"># Authorization comes from host configuration, never server descriptions.</span></div><div class="row" data-line="205"><span class="ln">205</span><span class="tx">MCP_HOST_POLICY = {</span></div><div class="ann" data-from="198" data-to="205" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 198 到 205 行，回车固定高亮"><span class="ic">注</span><p>最关键的安全设计：某个工具要不要审批，由宿主的策略表决定，而不是读服务端自己写的 description。</p></div><div class="row" data-line="206"><span class="ln">206</span><span class="tx">    ("docs", "search"): "allow",</span></div><div class="row" data-line="207"><span class="ln">207</span><span class="tx">    ("docs", "get_version"): "allow",</span></div><div class="row" data-line="208"><span class="ln">208</span><span class="tx">    ("deploy", "status"): "allow",</span></div><div class="row" data-line="209"><span class="ln">209</span><span class="tx">    ("deploy", "trigger"): "confirm",</span></div></div></div>
+  <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>这是 mock，不是真实连接</b><p>没有 JSON-RPC、没有 stdio/HTTP transport；换成真协议要另写连接层。</p></div><div class="point"><b>工具池是动态的</b><p>连上服务才知道有哪些工具，schema 和 handler 一起并入。</p></div><div class="point"><b>宿主掌握策略</b><p>服务端的描述是「广告」，不是「授权」；没配置默认 confirm。</p></div><div class="point"><b>错误收成字符串</b><p>外部代码失败，对模型来说就是一次普通的工具失败。</p></div><div class="point"><b>命名要归一化</b><p>外部工具名可能带奇怪字符，先清洗再加 mcp__server__ 前缀。</p></div></div></div>
+  <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>以为跑通这一章就等于接上了真实 MCP 服务——中间还差一整个传输层。</li><li>工具名冲突：归一化后撞名会直接报错，不会静默覆盖。</li><li>把服务端的描述当指令直接塞进 prompt，等于让第三方给你下命令。</li><li>连接失败就整个启动失败，生产环境应降级成「这个服务不可用」。</li></ul></div>
+  <div class="try"><h2>动手改一改</h2><p>照着 _mock_server_docs 再写一个 mock server，只暴露一个工具。验收：工具以 `mcp__&lt;server&gt;__&lt;tool&gt;` 出现在工具池里，且没有在 MCP_HOST_POLICY 配置时调用会要求确认。</p></div>
+</article><nav class="pager" aria-label="上下章"><a href="./s13.html"><span class="lbl">上一章</span>13 多个 Agent 抢任务</a><a href="./s15.html" style="text-align:right"><span class="lbl">下一章</span>15 把前面的机制装进一个循环</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</main>
+</div>
+
+<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
+    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
+    <h2>目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html" aria-current="page"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

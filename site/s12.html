@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="「每天早上 9 点跑测试」「每 30 分钟看一次 CI」——总不能让用户每次到点手动敲一遍。">
+<meta name="color-scheme" content="light dark">
+<title>12 到点自己开工 · Learn Claude Code 大白话教程</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
+  <span class="ver">7226f55</span>
+  <span class="spacer"></span>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+</header>
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html" aria-current="page"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
+<main>
+
+<article class="ch" id="s12">
+  <div class="ch-head">
+    <span class="num">12</span>
+    <div class="ch-title">
+      <span class="flag ">进阶 · 关键片段</span>
+      <h1>到点自己开工<small>Cron Scheduler</small></h1>
+      <p class="quote">进程内定时轮询，到点入队</p>
+    </div>
+  </div>
+  <p class="problem"><b>解决什么问题 · </b>「每天早上 9 点跑测试」「每 30 分钟看一次 CI」——总不能让用户每次到点手动敲一遍。</p>
+  <div class="idea"><h2>思路</h2><ol><li>存一条 cron 表达式 + 一段 prompt；</li><li>后台线程每隔一段时间检查是否匹配当前时间；</li><li>匹配就把 prompt 塞进队列；</li><li>Agent 空闲时取队列，当作一条用户消息注入。</li></ol></div>
+  <div class="code-wrap"><div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="file">s12_cron_scheduler/code.py · L299–321</span><a href="https://github.com/shareAI-lab/learn-claude-code/blob/7226f555d48900076eba126acf37c9ed5f002b5d/s12_cron_scheduler/code.py#L299-L321" target="_blank" rel="noreferrer">GitHub 原文 ↗</a></div><div class="code" id="s12-0"><div class="row" data-line="299"><span class="ln">299</span><span class="tx">def cron_matches(cron_expr: str, moment: datetime) -&gt; bool:</span></div><div class="ann" data-from="299" data-to="299" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 299 到 299 行，回车固定高亮"><span class="ic">注</span><p>自己实现 5 段 cron：分、时、日、月、周。没有依赖库，逻辑一目了然。</p></div><div class="row" data-line="300"><span class="ln">300</span><span class="tx">    fields = cron_expr.strip().split()</span></div><div class="row" data-line="301"><span class="ln">301</span><span class="tx">    if len(fields) != 5:</span></div><div class="row" data-line="302"><span class="ln">302</span><span class="tx">        return False</span></div><div class="row" data-line="303"><span class="ln">303</span><span class="tx">&nbsp;</span></div><div class="row" data-line="304"><span class="ln">304</span><span class="tx">    minute, hour, day, month, weekday = fields</span></div><div class="row" data-line="305"><span class="ln">305</span><span class="tx">    cron_weekday = (moment.weekday() + 1) % 7</span></div><div class="ann" data-from="300" data-to="305" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 300 到 305 行，回车固定高亮"><span class="ic">注</span><p>Python 里周一 = 0，cron 里周日 = 0。这一行换算错，你的「每周一」就会变成「每周日」。</p></div><div class="row" data-line="306"><span class="ln">306</span><span class="tx">    if not (</span></div><div class="row" data-line="307"><span class="ln">307</span><span class="tx">        _cron_field_matches(minute, moment.minute)</span></div><div class="row" data-line="308"><span class="ln">308</span><span class="tx">        and _cron_field_matches(hour, moment.hour)</span></div><div class="row" data-line="309"><span class="ln">309</span><span class="tx">        and _cron_field_matches(month, moment.month)</span></div><div class="row" data-line="310"><span class="ln">310</span><span class="tx">    ):</span></div><div class="row" data-line="311"><span class="ln">311</span><span class="tx">        return False</span></div><div class="row" data-line="312"><span class="ln">312</span><span class="tx">&nbsp;</span></div><div class="row" data-line="313"><span class="ln">313</span><span class="tx">    day_matches = _cron_field_matches(day, moment.day)</span></div><div class="row" data-line="314"><span class="ln">314</span><span class="tx">    weekday_matches = _cron_field_matches(weekday, cron_weekday)</span></div><div class="row" data-line="315"><span class="ln">315</span><span class="tx">    if day == "*" and weekday == "*":</span></div><div class="ann" data-from="306" data-to="315" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 306 到 315 行，回车固定高亮"><span class="ic">注</span><p>日和周都不限，直接匹配。真正麻烦的是下面两种情况。</p></div><div class="row" data-line="316"><span class="ln">316</span><span class="tx">        return True</span></div><div class="row" data-line="317"><span class="ln">317</span><span class="tx">    if day == "*":</span></div><div class="row" data-line="318"><span class="ln">318</span><span class="tx">        return weekday_matches</span></div><div class="row" data-line="319"><span class="ln">319</span><span class="tx">    if weekday == "*":</span></div><div class="row" data-line="320"><span class="ln">320</span><span class="tx">        return day_matches</span></div><div class="row" data-line="321"><span class="ln">321</span><span class="tx">    return day_matches or weekday_matches</span></div><div class="ann" data-from="316" data-to="321" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 316 到 321 行，回车固定高亮"><span class="ic">注</span><p>日和周都被指定时是「或」关系，不是「与」——这是 cron 的历史坑。</p></div></div></div>
+  <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>5 段 cron</b><p>分 时 日 月 周，够用且好读。</p></div><div class="point"><b>日/周是 or</b><p>同时指定时，任意一个匹配就触发。</p></div><div class="point"><b>任务持久化</b><p>cron 任务会写到磁盘（save_durable_jobs），进程重启后还能读回来。</p></div><div class="point"><b>同一分钟只触发一次</b><p>用 minute_marker 去重，否则一小时内会触发 60 次。</p></div><div class="point"><b>进程内轮询，不是系统 cron</b><p>程序退出、电脑休眠时不会执行；醒来也不会把错过的补上。</p></div></div></div>
+  <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>以为它像系统 cron 一样常驻——它只是主进程里的一个线程。</li><li>时区：服务器 UTC、用户东八区，早上 9 点可能变成下午 5 点。</li><li>重复触发：每分钟检查一次，但没记录「这一分钟已经跑过」。</li></ul></div>
+  <div class="try"><h2>动手改一改</h2><p>加一条 `*/2 * * * *` 的任务，观察它是不是每两分钟自己跑一次。验收：队列里出现两次间隔 2 分钟的注入记录；把进程停掉 5 分钟再启动，验收：错过的两次不会补跑。</p></div>
+</article><nav class="pager" aria-label="上下章"><a href="./s11.html"><span class="lbl">上一章</span>11 慢操作丢后台</a><a href="./s13.html" style="text-align:right"><span class="lbl">下一章</span>13 多个 Agent 抢任务</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</main>
+</div>
+
+<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
+    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
+    <h2>目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html" aria-current="page"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

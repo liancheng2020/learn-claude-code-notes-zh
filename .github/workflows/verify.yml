@@ -1,0 +1,26 @@
+name: Verify generated site
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["content/**", "build.py", "site/**", "assets/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout pinned upstream
+        run: |
+          git clone https://github.com/shareAI-lab/learn-claude-code upstream
+          git -C upstream checkout 7226f555d48900076eba126acf37c9ed5f002b5d
+      - name: Rebuild
+        run: python3 build.py --src upstream --out /tmp/site-check
+      - name: Diff against committed site
+        run: diff -r site /tmp/site-check

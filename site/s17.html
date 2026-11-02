@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="s01 的退出条件是「模型不再要工具」。但模型经常在事情没做完时就说「已完成」。让它自己判断，等于让学生自己批卷子。">
+<meta name="color-scheme" content="light dark">
+<title>17 模型说完了不算完 · Learn Claude Code 大白话教程</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
+  <span class="ver">7226f55</span>
+  <span class="spacer"></span>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+</header>
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html" aria-current="page"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
+<main>
+
+<article class="ch" id="s17">
+  <div class="ch-head">
+    <span class="num">17</span>
+    <div class="ch-title">
+      <span class="flag ">进阶 · 关键片段</span>
+      <h1>模型说完了不算完<small>Goal Loop</small></h1>
+      <p class="quote">另起一次无工具的模型调用做裁决</p>
+    </div>
+  </div>
+  <p class="problem"><b>解决什么问题 · </b>s01 的退出条件是「模型不再要工具」。但模型经常在事情没做完时就说「已完成」。让它自己判断，等于让学生自己批卷子。</p>
+  <div class="idea"><h2>思路</h2><ol><li>目标是一段可判定的条件，比如「测试全绿」「文件存在」；</li><li>每轮结束，交给一个独立的、不带工具的模型调用裁决；</li><li>没达成就再跑一轮，并告诉模型「还差什么」；</li><li>连续被挡超过阈值就返回 limit，避免无限循环。</li></ol></div>
+  <div class="code-wrap"><div class="code-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="file">s17_goal_loop/code.py · L296–335</span><a href="https://github.com/shareAI-lab/learn-claude-code/blob/7226f555d48900076eba126acf37c9ed5f002b5d/s17_goal_loop/code.py#L296-L335" target="_blank" rel="noreferrer">GitHub 原文 ↗</a></div><div class="code" id="s17-0"><div class="row" data-line="296"><span class="ln">296</span><span class="tx">    def set_goal(self, condition: str, tokens_at_start: int = 0) -&gt; GoalState:</span></div><div class="ann" data-from="296" data-to="296" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 296 到 296 行，回车固定高亮"><span class="ic">注</span><p>目标是一段自然语言条件，但要能被证据判定——「代码优雅」不行，「pytest 全绿」可以。</p></div><div class="row" data-line="297"><span class="ln">297</span><span class="tx">        condition = condition.strip()</span></div><div class="row" data-line="298"><span class="ln">298</span><span class="tx">        if not condition:</span></div><div class="row" data-line="299"><span class="ln">299</span><span class="tx">            raise GoalError("goal condition cannot be empty")</span></div><div class="row" data-line="300"><span class="ln">300</span><span class="tx">        if len(condition) &gt; MAX_GOAL_LENGTH:</span></div><div class="row" data-line="301"><span class="ln">301</span><span class="tx">            raise GoalError(</span></div><div class="row" data-line="302"><span class="ln">302</span><span class="tx">                f"goal condition cannot exceed {MAX_GOAL_LENGTH} characters"</span></div><div class="row" data-line="303"><span class="ln">303</span><span class="tx">            )</span></div><div class="row" data-line="304"><span class="ln">304</span><span class="tx">        if self.active is not None:</span></div><div class="ann" data-from="297" data-to="304" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 297 到 304 行，回车固定高亮"><span class="ic">注</span><p>设新目标前，先给旧目标记一笔「被替换」。审计链不断。</p></div><div class="row" data-line="305"><span class="ln">305</span><span class="tx">            self._record(</span></div><div class="row" data-line="306"><span class="ln">306</span><span class="tx">                active=False,</span></div><div class="row" data-line="307"><span class="ln">307</span><span class="tx">                met=False,</span></div><div class="row" data-line="308"><span class="ln">308</span><span class="tx">                failed=False,</span></div><div class="row" data-line="309"><span class="ln">309</span><span class="tx">                reason="replaced by a new goal",</span></div><div class="row" data-line="310"><span class="ln">310</span><span class="tx">            )</span></div><div class="row" data-line="311"><span class="ln">311</span><span class="tx">        self.active = GoalState(</span></div><div class="row" data-line="312"><span class="ln">312</span><span class="tx">            condition=condition,</span></div><div class="row" data-line="313"><span class="ln">313</span><span class="tx">            iterations=0,</span></div><div class="row" data-line="314"><span class="ln">314</span><span class="tx">            set_at=time.time(),</span></div><div class="row" data-line="315"><span class="ln">315</span><span class="tx">            tokens_at_start=tokens_at_start,</span></div><div class="row" data-line="316"><span class="ln">316</span><span class="tx">        )</span></div><div class="row" data-line="317"><span class="ln">317</span><span class="tx">        self.consecutive_blocks = 0</span></div><div class="row" data-line="318"><span class="ln">318</span><span class="tx">        self._record(active=True, met=False, failed=False, reason="goal set")</span></div><div class="ann" data-from="305" data-to="318" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 305 到 318 行，回车固定高亮"><span class="ic">注</span><p>每次状态变化都落一条记录。事后能复盘「它为什么觉得没完成、依据是什么」。</p></div><div class="row" data-line="319"><span class="ln">319</span><span class="tx">        return self.active</span></div><div class="row" data-line="320"><span class="ln">320</span><span class="tx">&nbsp;</span></div><div class="row" data-line="321"><span class="ln">321</span><span class="tx">    def clear(self, reason: str = "cleared") -&gt; str:</span></div><div class="row" data-line="322"><span class="ln">322</span><span class="tx">        if self.active is None:</span></div><div class="row" data-line="323"><span class="ln">323</span><span class="tx">            return "No goal set"</span></div><div class="row" data-line="324"><span class="ln">324</span><span class="tx">        condition = self.active.condition</span></div><div class="row" data-line="325"><span class="ln">325</span><span class="tx">        self._record(</span></div><div class="row" data-line="326"><span class="ln">326</span><span class="tx">            active=False,</span></div><div class="row" data-line="327"><span class="ln">327</span><span class="tx">            met=False,</span></div><div class="row" data-line="328"><span class="ln">328</span><span class="tx">            failed=False,</span></div><div class="row" data-line="329"><span class="ln">329</span><span class="tx">            reason=reason,</span></div><div class="row" data-line="330"><span class="ln">330</span><span class="tx">        )</span></div><div class="row" data-line="331"><span class="ln">331</span><span class="tx">        self.active = None</span></div><div class="row" data-line="332"><span class="ln">332</span><span class="tx">        self.consecutive_blocks = 0</span></div><div class="row" data-line="333"><span class="ln">333</span><span class="tx">        return f"Goal cleared: {condition}"</span></div><div class="row" data-line="334"><span class="ln">334</span><span class="tx">&nbsp;</span></div><div class="row" data-line="335"><span class="ln">335</span><span class="tx">    def status(self, current_tokens: int = 0) -&gt; str:</span></div><div class="ann" data-from="319" data-to="335" role="button" tabindex="0" aria-pressed="false" aria-label="讲解，第 319 到 335 行，回车固定高亮"><span class="ic">注</span><p>status 是给模型看的：目标是什么、跑了几轮、花了多少 token、还差什么。</p></div></div></div>
+  <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>判断器独立于执行者</b><p>另起一次调用，不带工具，只读 transcript 做判断。</p></div><div class="point"><b>但它仍是模型</b><p>判断可能出错：被漂亮的说法骗过，或者对证据理解偏差。不能等同于确定性的测试验收。</p></div><div class="point"><b>条件要可判定</b><p>用命令退出码、文件是否存在、测试是否通过，而不是形容词。</p></div><div class="point"><b>有止损但无 token 硬上限</b><p>连续 block 超过 block_cap 会返回 limit；代码里没有「花到多少钱就停」的硬约束。</p></div><div class="point"><b>裁决要留痕</b><p>每次判定都记录，才能调试「它为什么一直说没完成」。</p></div></div></div>
+  <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>把独立判断器当成「客观真理」——它只是换了一次模型调用，仍会误判。</li><li>目标本身不可判定（「体验要好」），判断器只能瞎猜。</li><li>完全依赖它决定收工，却没有外部测试或人工验收兜底。</li></ul></div>
+  <div class="try"><h2>动手改一改</h2><p>设一个「pytest 必须全绿」的目标，故意留一个失败测试。验收：判断器连续返回 block，模型回去改代码；等测试真的全绿后，下一次判断返回 achieved。再把目标改成「代码写得优雅」，观察它给出的理由有多主观。</p></div>
+</article><nav class="pager" aria-label="上下章"><a href="./s16.html"><span class="lbl">上一章</span>16 单步交给模型，编排交给脚本</a><a href="./index.html" style="text-align:right"><span class="lbl">回到</span>目录</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</main>
+</div>
+
+<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
+    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
+    <h2>目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html" aria-current="page"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

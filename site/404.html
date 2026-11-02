@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="按 commit 7226f55 逐行讲解 learn-claude-code 的 17 章。">
+<meta name="color-scheme" content="light dark">
+<title>Learn Claude Code · 大白话逐行教程</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
+  <span class="ver">7226f55</span>
+  <span class="spacer"></span>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+</header>
+<div class="layout no-side">
+
+<main>
+
+<header class="hero">
+  <div class="kicker">Learn Claude Code · 大白话版</div>
+  <h1>看懂一个 AI 编程 Agent<br>是怎么造出来的</h1>
+  <p class="lead">这个仓库用 17 章的 Python 示例，把 Claude Code 这类编程 Agent 拆开给你看：没有魔法，只有循环、工具、权限、上下文管理和一层层「补丁」。本教程按 commit 7226f55 讲，代码全部取自该版本的源文件。</p>
+  <div class="meta"><span>17 章</span><span>Python</span>
+    <span>基于 commit 7226f55</span><span>逐行 + 分段讲解</span></div>
+</header>
+
+<div class="intro-card">
+  <h3>先记住一句话：模型负责「想」，代码负责「让它能动手」</h3>
+  <p>大模型本身只会输出文字。它能写出 <code>rm -rf build</code>，但它没有手，删不掉任何东西。
+  所谓 Agent，就是<strong>模型 + 一套让它能感知和行动的外壳</strong>。这个外壳，作者叫 <b>Harness</b>（载具）。</p>
+  <p>所以整本书不是「教模型变聪明」，而是「教你怎么造载具」：怎么把工具递给它、怎么拦危险操作、
+  怎么在上下文快满时腾地方、怎么让多个 Agent 分工。</p>
+</div>
+
+<div class="intro-card warn-card">
+  <h3>先说清楚这份教程的覆盖范围</h3>
+  <p>不是 17 章都「完整源码 + 逐行」。真实情况如下，章节标题旁边也有对应标签：</p>
+  <table class="tbl">
+  <thead><tr><th style="width:96px">章节</th><th style="width:170px">代码呈现</th><th>讲解方式</th></tr></thead>
+  <tbody>
+  <tr><td>s01–s02</td><td><b>完整源码</b>（整个 code.py）</td><td>每一行都有注解</td></tr>
+  <tr><td>s03–s08</td><td><b>核心源码节选</b>（每章 1–3 段）</td><td>节选内逐行注解；未选中的部分不在文中</td></tr>
+  <tr><td>s09–s17</td><td><b>关键片段</b>（每章 1–4 段）</td><td>片段内逐行注解；其余机制分段说明，不冒充逐行</td></tr>
+  </tbody>
+  </table>
+  <p>每个代码块右上角标了 <code>L起–L止</code>，可以在固定 commit 的 GitHub 原文里逐行对照。
+  片段之间如果有省略，会另起一个代码块，不会把不相邻的代码拼在一起。</p>
+</div>
+
+<div class="intro-card">
+  <h3>全书的骨架，其实就 4 行</h3>
+<pre class="sh">while True:
+    response = LLM(messages, tools)     # 问模型
+    if 没有 tool_use: break              # 它不想动手了，收工
+    执行工具，把结果 append 回 messages   # 干活、记录
+# 然后继续下一圈</pre>
+  <p>后面 16 章，都是在这个循环<strong>外面</strong>加东西：加工具（s02）、加权限（s03）、
+  加钩子（s04）、加计划（s05）、加子 Agent（s06）……循环形状基本没变。
+  作者反复强调的就是这一点：<b>好的 Harness 是围绕循环加装，而不是把逻辑塞进循环</b>。</p>
+</div>
+
+<div class="intro-card">
+  <h3>把代码跑起来（按仓库 requirements.txt）</h3>
+<pre class="sh">git clone https://github.com/shareAI-lab/learn-claude-code
+cd learn-claude-code
+python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt                         # anthropic、python-dotenv、PyYAML
+cp .env.example .env 2>/dev/null || printf 'ANTHROPIC_API_KEY=\nMODEL_ID=\n' > .env
+python s01_agent_loop/code.py</pre>
+  <p><b>从仓库根目录运行</b>：s07 会在工作目录下找 <code>skills/</code>，s08 会把 transcript 写到
+  <code>./.transcripts/</code>，所有文件工具都以「启动时的工作目录」为根。换目录跑，行为会跟着变。</p>
+  <p><b>密钥只写进本机 <code>.env</code></b>，不要贴进对话、截图或这份 HTML。模型名（<code>MODEL_ID</code>）
+  按你自己账号能用的写，教程里的示例名不保证可用。</p>
+  <p><b>自定义地址</b>必须兼容 Anthropic Messages 协议（<code>/v1/messages</code>、相同的请求/响应结构），
+  不是随便填一个「中转地址」就能跑；<code>ANTHROPIC_BASE_URL</code> 只是换 base URL，不改变协议。</p>
+</div>
+
+<div class="intro-card warn-card">
+  <h3>跑之前请知道：它会真的动你的机器</h3>
+  <p>这些示例会执行 shell 命令、读写文件、发起真实的模型请求——<b>会产生费用</b>。
+  建议在一台干净的虚拟机、容器或专门的练习目录里跑，别在有密钥和重要数据的目录里试。</p>
+  <p>教程里的练习都<b>不要求你关掉权限检查</b>，也不建议用「默认允许危险操作」来图省事。
+  s03 的黑名单只是字符串匹配，不是沙箱，更不是安全边界。</p>
+</div>
+
+<div class="intro-card">
+  <h3>这本书怎么读</h3>
+  <p><b>第 1–2 章：</b>完整代码，值得照着敲一遍，先把「循环 + 工具分发」的手感建立起来。</p>
+  <p><b>第 3–8 章：</b>看节选，重点是每章「加在循环外面的那一层」——权限、钩子、计划、子 Agent、技能、压缩。</p>
+  <p><b>第 9–17 章：</b>看机制和关键片段。s15 一个文件 3000 多行，本教程只挑主循环、工具池、hook 注册三处，够你看懂它是怎么拼起来的。</p>
+  <p>每章结构一致：解决什么问题 → 思路 → 代码 → 记住这几条 → 容易踩的坑 → 动手改一改。
+  文中会尽量区分<b>「本版就是这样实现的」</b>、<b>「这里是教学简化」</b>和<b>「生产环境才会这么做」</b>；看到「建议」「生产环境」这类词，基本说明源码里没有。</p>
+</div>
+
+<h3 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:34px 0 6px;font-weight:700">17 章地图</h3>
+<table class="tbl">
+<thead><tr><th style="width:64px">章</th><th style="width:150px">主题</th><th>一句话</th></tr></thead>
+<tbody>
+<tr><td>s01</td><td>Agent Loop</td><td>一个 while 循环 + 一个 bash，就是最小 Agent</td></tr>
+<tr><td>s02</td><td>Tool Use</td><td>加工具 = 加 schema + 加 handler + 表里一行</td></tr>
+<tr><td>s03</td><td>Permission</td><td>执行前过三道闸：黑名单、规则、问人（仅此而已，不是沙箱）</td></tr>
+<tr><td>s04</td><td>Hooks</td><td>把扩展逻辑挂在循环上，而不是写进循环里</td></tr>
+<tr><td>s05</td><td>TodoWrite</td><td>清单由工具维护；连续 3 轮不更新才追加一条提醒</td></tr>
+<tr><td>s06</td><td>Subagent</td><td>子任务开一段全新对话，只把结论带回来（仅上下文隔离）</td></tr>
+<tr><td>s07</td><td>Skill Loading</td><td>目录常驻 system prompt，正文调 load_skill 才读</td></tr>
+<tr><td>s08</td><td>Context Compact</td><td>四步压缩：外置 → 归档 → 截断 → 摘要</td></tr>
+<tr><td>s09</td><td>Memory</td><td>跨会话记忆：目录 + 按相关性召回，失败退回关键词</td></tr>
+<tr><td>s10</td><td>Task System</td><td>任务落盘成文件；依赖「未完成」才阻塞，没有并发锁</td></tr>
+<tr><td>s11</td><td>Background</td><td>慢命令丢后台线程，主循环继续转（进程退出就没了）</td></tr>
+<tr><td>s12</td><td>Cron</td><td>进程内定时轮询，到点把 prompt 塞进队列</td></tr>
+<tr><td>s13</td><td>Agent Teams</td><td>多线程队友抢任务：文件锁 + 每人一个进行中任务 + 可选 worktree</td></tr>
+<tr><td>s14</td><td>MCP</td><td>内存版 mock：工具清单 + 宿主策略，没有真实传输层</td></tr>
+<tr><td>s15</td><td>Integrated</td><td>把机制装进一个循环；本教程只看主循环、工具池、hook 三处</td></tr>
+<tr><td>s16</td><td>Workflow</td><td>脚本定编排，模型做单步；默认跑的是 mock runner</td></tr>
+<tr><td>s17</td><td>Goal Loop</td><td>另起一次无工具的模型调用做裁决，仍然可能判错</td></tr>
+</tbody>
+</table>
+
+<div class="intro-card">
+  <h3>这一版改了什么</h3>
+  <p>按 commit <code>7226f55</code>（2026-10-27）逐条核对后，修正了：覆盖范围声明、s05 的 Todo 提醒机制、
+  s10 的依赖判定、s15 缺失的代码、s08 的四步压缩，以及「黑名单=沙箱」「子 Agent=隔离」「worktree=隔离」
+  「cron 进程退出仍执行」等过度表述。每章的练习也换成了源码里真实存在的标识符。</p>
+</div>
+
+<h2 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:38px 0 0;font-weight:700">逐章阅读</h2>
+<div class="cards"><a class="card" href="./s01.html"><span class="no">CH 01</span><h3>一个循环就够了</h3><p>一个工具 + 一个循环 = 一个 Agent</p><div class="kind ok">完整源码 · 逐行</div></a><a class="card" href="./s02.html"><span class="no">CH 02</span><h3>加工具只加一行</h3><p>循环不用动，新工具注册进 dispatch map 就行</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s03.html"><span class="no">CH 03</span><h3>执行前先过三道闸</h3><p>权限管线决定哪些操作需要审批</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s04.html"><span class="no">CH 04</span><h3>挂在循环上，不写进循环里</h3><p>hook 在工具执行前后注入扩展逻辑</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s05.html"><span class="no">CH 05</span><h3>先列清单再动手</h3><p>清单由工具维护，连续 3 轮不更新才提醒</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s06.html"><span class="no">CH 06</span><h3>子任务给一段干净上下文</h3><p>子 agent 从全新的 messages[] 开始，只把结论带回来</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s07.html"><span class="no">CH 07</span><h3>知识用到时再加载</h3><p>目录常驻，正文按需</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s08.html"><span class="no">CH 08</span><h3>上下文满了先腾地方</h3><p>四步压缩，从最便宜的做起</p><div class="kind ">核心节选 · 逐行</div></a><a class="card" href="./s09.html"><span class="no">CH 09</span><h3>跨会话记住该记的</h3><p>把以后还会用到的信息留下来</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s10.html"><span class="no">CH 10</span><h3>任务落盘，进度可恢复</h3><p>依赖「未完成」才阻塞，列表非空不算</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s11.html"><span class="no">CH 11</span><h3>慢操作丢后台</h3><p>慢命令放后台线程，主循环继续转</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s12.html"><span class="no">CH 12</span><h3>到点自己开工</h3><p>进程内定时轮询，到点入队</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s13.html"><span class="no">CH 13</span><h3>多个 Agent 抢任务</h3><p>文件锁 + 一个进行中任务 + 可选 worktree</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s14.html"><span class="no">CH 14</span><h3>工具改由外部提供</h3><p>内存版 mock：清单 + 宿主策略，没有真实传输</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s15.html"><span class="no">CH 15</span><h3>把前面的机制装进一个循环</h3><p>一个循环 + 两个注册表</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s16.html"><span class="no">CH 16</span><h3>单步交给模型，编排交给脚本</h3><p>脚本定顺序，模型做单步；默认跑的是 mock</p><div class="kind ">进阶 · 关键片段</div></a><a class="card" href="./s17.html"><span class="no">CH 17</span><h3>模型说完了不算完</h3><p>另起一次无工具的模型调用做裁决</p><div class="kind ">进阶 · 关键片段</div></a></div>
+<section class="outro" id="outro">
+<h2 style="font-size:26px;margin:0 0 6px">学完之后</h2>
+<p style="color:var(--mid);margin:0 0 18px">17 章看下来，其实就三句话——但这三句都要加限定条件。</p>
+
+<div class="intro-card">
+  <h3>1. 循环是地基，能力长在它外面</h3>
+  <p>工具是注册表、权限是钩子、上下文是包装、子 Agent 是再开一个循环。
+  这套课程里，加能力基本不用改 while 循环——但如果你要的是多租户、并发隔离、可观测性，那些工作不在循环里，也不在这 17 个文件里。</p>
+</div>
+
+<div class="intro-card">
+  <h3>2. 模型负责决策，代码负责边界</h3>
+  <p>让它决定调什么工具、写什么代码；但「能不能删这个目录」「上下文满了怎么办」「什么算完成」，
+  这些边界得由代码兜住。prompt 是建议，代码才是约束。</p>
+</div>
+
+<div class="intro-card">
+  <h3>3. 上下文是唯一的稀缺资源</h3>
+  <p>s06 子 Agent、s07 技能加载、s08 压缩、s09 记忆，四个章节都在干同一件事：
+  <strong>让模型在有限窗口里看到最该看的东西</strong>。这也是这份代码里最值得反复读的部分。</p>
+</div>
+
+<div class="intro-card warn-card">
+  <h3>这份代码不是什么</h3>
+  <p>它不是安全沙箱（s03 只是字符串黑名单），不是生产级多租户系统（s15 只有一个进程、一份全局状态），
+  不是真实的 MCP 实现（s14 是内存 mock），也不是可靠的自动验收（s17 的判断器仍然是模型）。
+  把它当教材读，别当框架用。</p>
+</div>
+
+<h3 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:34px 0 8px;font-weight:700">接下来可以做什么</h3>
+<ul style="margin:0;padding-left:22px">
+<li>把 s01 那份 40 行代码改成你熟悉的语言（TypeScript / Go），你会真正理解每个细节。</li>
+<li>给 s02 加一个你工作里最常用的工具，体会「加工具不改循环」。</li>
+<li>把 s03 的黑名单换成真正的命令解析，看看能防住多少绕过手法。</li>
+<li>把 s08 的阈值调小，观察一次真实的长任务里四步压缩各触发了几次。</li>
+</ul>
+
+<p style="margin-top:26px;color:var(--mid);font-size:14px">
+配套仓库：<a href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a>（MIT），
+本教程对应 commit <code>7226f55</code>。每章目录里都有独立的 README 和可运行代码，建议对照原仓库一起读。
+</p>
+</section>
+<footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./LICENSE.html">许可与来源</a>。</footer>
+</main>
+</div>
+
+<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
+    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
+    <h2>目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>
