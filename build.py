@@ -397,12 +397,15 @@ def page(title: str, desc: str, body: str, nav: str | None = None,
 <body class="{body_class}">
 <a id="top"></a>
 <header class="topbar">
-  <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
-  <button class="toc-btn" id="tocBtn" type="button" aria-expanded="false" aria-controls="tocPanel">目录</button>
-  <span class="spacer"></span>
-  <a class="plain" href="{TUTORIAL_REPO}" target="_blank" rel="noreferrer">本站源码</a>
-  <a class="plain" href="{UPSTREAM}" target="_blank" rel="noreferrer">原仓库</a>
-  <button class="theme-btn" id="themeBtn" type="button" aria-label="切换主题">◐</button>
+  <div class="topbar-inner">
+    <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
+    <button class="toc-btn" id="tocBtn" type="button" aria-expanded="false" aria-controls="tocPanel">目录</button>
+    <div class="actions">
+      <a class="plain" href="{TUTORIAL_REPO}" target="_blank" rel="noreferrer">本站源码</a>
+      <a class="plain" href="{UPSTREAM}" target="_blank" rel="noreferrer">原仓库</a>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换主题">◐</button>
+    </div>
+  </div>
 </header>
 <div class="{cls}">
 {sidebar}
