@@ -148,7 +148,6 @@ def nav_html(current: str | None) -> str:
 
 def drawer_html(current: str | None) -> str:
     return f"""
-<button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
 <div class="toc-panel" id="tocPanel" hidden>
   <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
     <button class="close" id="tocClose" aria-label="关闭目录">×</button>
@@ -185,8 +184,8 @@ def page(title: str, desc: str, body: str, current: str | None, side: bool) -> s
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="./index.html">Learn Claude Code · 大白话教程</a>
-  <span class="ver">{COMMIT_SHORT}</span>
+  <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
+  <button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
   <span class="spacer"></span>
   <a class="plain" href="{REPO}" target="_blank" rel="noreferrer">原仓库 ↗</a>
 </header>
