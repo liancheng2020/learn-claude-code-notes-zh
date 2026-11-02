@@ -63,6 +63,12 @@ open site/index.html            # 或 python3 -m http.server -d site 8000
 - 样式：`assets/style.css`；交互：`assets/app.js`；
 - 改完重新构建，把 `site/` 一起提交。
 
+## 提交约定
+
+- **提交信息统一用中文**，格式 `type:描述`，例如：
+  `feat:新增 s05 注解`、`fix:修正 s10 依赖说明`、`docs:补充部署说明`、`style:统一主题色`。
+- `site/` 是构建产物：改内容请改 `content/`，重新生成后与页面一起提交。
+
 ## 校验
 
 ```bash
