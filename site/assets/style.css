@@ -24,7 +24,7 @@ a:hover{color:var(--accent-strong);text-decoration:underline}
 .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
   padding:10px 22px;background:color-mix(in srgb,var(--bg) 88%,transparent);
   backdrop-filter:saturate(160%) blur(8px);border-bottom:1px solid var(--line);font-size:13.5px}
-.topbar .brand{font-weight:700;color:var(--ink)}
+.topbar .brand{font-weight:700;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar .ver{font-family:var(--mono);font-size:11.5px;color:var(--mid)}
 .topbar .spacer{flex:1}
 .topbar a.plain{color:var(--mid)}
@@ -123,9 +123,9 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .pager a{display:block;max-width:48%}
 .pager .lbl{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid)}
 footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);color:var(--mid);font-size:13px}
-.toc-btn{display:none;position:fixed;right:16px;bottom:16px;z-index:40;background:var(--accent);
-  color:#fff;border:0;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:600;
-  box-shadow:var(--shadow);cursor:pointer}
+.toc-btn{display:none;background:var(--accent-soft);color:var(--accent);
+  border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;
+  font-weight:600;cursor:pointer;font-family:var(--sans)}
 .toc-panel{position:fixed;inset:0;z-index:50;background:rgba(10,12,16,.45);display:none}
 .toc-panel.open{display:block}
 .toc-sheet{position:absolute;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;
@@ -142,8 +142,13 @@ footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);color:v
   .layout{grid-template-columns:minmax(0,1fr)}
   .side{display:none}
   main{padding:26px 18px 96px;max-width:100%;min-width:0}
-  .topbar{padding:10px 16px}
-  .toc-btn{display:block}
+  .topbar{padding:9px 14px;gap:10px}
+  .topbar .brand{font-size:13px}
+  .topbar .b2{display:none}
+  .topbar .ver{display:none}
+  .topbar a.plain{white-space:nowrap;font-size:12.5px}
+  .toc-btn{white-space:nowrap;padding:4px 10px}
+  .toc-btn{display:inline-flex;align-items:center}
   .code{overflow-x:visible}
   .row{white-space:pre-wrap}
   .row .tx{white-space:pre-wrap;overflow-wrap:anywhere}
