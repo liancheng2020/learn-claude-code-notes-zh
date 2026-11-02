@@ -140,7 +140,7 @@ def main():
             capture_output=True, text=True, timeout=60).stdout
         m = re.search(r"<title>UI (.*?)</title>", out, re.S)
         r = json.loads(m.group(1)) if m else {}
-        if r.get("docW") != 320:
+        if not r.get("w") or r.get("docW", 9999) > r["w"]:
             errors.append(f"320px 许可页溢出：{r}")
 
         if errors:
