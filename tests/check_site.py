@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT))
 
 CHAPTERS = [f"s{i:02d}" for i in range(1, 18)]
 REQUIRED = ["index.html", "LICENSE.html", "404.html", ".lcc-build",
-            "assets/style.css", "assets/app.js", "robots.txt"]
+            "assets/style.css", "assets/app.js", "assets/favicon.ico",
+            "assets/favicon.svg", "assets/apple-touch-icon.png", "robots.txt"]
 
 
 class Blocks(HTMLParser):
@@ -68,6 +69,8 @@ def check_page(root, page, errors):
                 errors += fail(f"{page.name} 链接不存在：{href}")
     if '<script src="./assets/app.js"' not in doc:
         errors += fail(f"{page.name} 缺少 app.js")
+    if 'href="./assets/favicon.ico"' not in doc:
+        errors += fail(f"{page.name} 缺少 favicon")
     for tag, attr in (("script", "src"), ("link", "href"), ("img", "src")):
         for url in re.findall(rf'<{tag}[^>]*\b{attr}="([^"]+)"', doc):
             if url.startswith("http"):

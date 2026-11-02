@@ -402,7 +402,9 @@ def page(title: str, desc: str, body: str, nav: str | None = None,
 <meta name="description" content="{esc(desc)}">
 <meta name="color-scheme" content="light dark">
 <title>{esc(title)}</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="./assets/favicon.ico" sizes="any">
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
 <script>try{{var t=localStorage.getItem('lcc-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}}catch(e){{}}</script>
 <link rel="stylesheet" href="./assets/style.css">
 </head>
@@ -526,7 +528,7 @@ SOFTWARE.</pre>
 def write_site(out: Path, src_root: Path) -> None:
     src = Source(src_root)
     (out / "assets").mkdir(parents=True)
-    for f in ("style.css", "app.js"):
+    for f in ("style.css", "app.js", "favicon.ico", "favicon.svg", "apple-touch-icon.png"):
         shutil.copy2(HERE / "assets" / f, out / "assets" / f)
 
     pages = {"index.html": build_index(src)}
