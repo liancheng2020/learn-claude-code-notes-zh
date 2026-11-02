@@ -1,26 +1,58 @@
-name: Deploy site to Pages
+name: Verify and deploy
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/pages.yml"]
+    paths: &paths
+      - "site/**"
+      - "content/**"
+      - "assets/**"
+      - "build.py"
+      - "tests/**"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths: *paths
   workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 检出固定版本上游
+        run: |
+          git clone https://github.com/shareAI-lab/learn-claude-code upstream
+          git -C upstream checkout 7226f555d48900076eba126acf37c9ed5f002b5d
+      - name: 构建到临时目录
+        run: python3 build.py --src upstream --out /tmp/site-check
+      - name: 构建安全检查
+        run: python3 -m unittest discover -s tests -v
+      - name: 产物检查
+        run: python3 tests/check_site.py /tmp/site-check --src upstream
+      - name: 与已提交 site 比对
+        run: diff -r site /tmp/site-check
+
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5

@@ -7,15 +7,18 @@
 <meta name="color-scheme" content="light dark">
 <title>许可与来源 · Learn Claude Code 大白话教程</title>
 <link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('lcc-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
 <link rel="stylesheet" href="./assets/style.css">
 </head>
 <body class="">
 <a id="top"></a>
 <header class="topbar">
   <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
-  <button class="toc-btn" id="tocBtn" aria-expanded="false" aria-controls="tocPanel">目录</button>
+  <button class="toc-btn" id="tocBtn" type="button" aria-expanded="false" aria-controls="tocPanel">目录</button>
   <span class="spacer"></span>
-  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库 ↗</a>
+  <a class="plain" href="https://github.com/liancheng2020/learn-claude-code-zh" target="_blank" rel="noreferrer">本站源码</a>
+  <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库</a>
+  <button class="theme-btn" id="themeBtn" type="button" aria-label="切换主题">◐</button>
 </header>
 <div class="layout">
 <aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
@@ -44,7 +47,7 @@
     <div class="ch-title"><h1>许可与来源</h1><p class="quote">代码 MIT，讲解文字 CC BY 4.0</p></div>
   </div>
   <p class="problem">本站在 <a href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a>
-  的基础上做中文逐行讲解。代码片段逐字取自上游 commit <code>7226f55</code>（2026-10-27），
+  的基础上做中文讲解。代码片段逐字取自上游 commit <code>7226f55</code>（2026-10-27），
   版权归原作者，按 MIT License 使用；讲解文字为本站新增，按 CC BY 4.0 发布。</p>
   <h2 class="sec-title">上游 MIT 许可全文</h2>
   <pre class="license">MIT License
@@ -75,9 +78,9 @@ SOFTWARE.</pre>
 </div>
 
 <div class="toc-panel" id="tocPanel" hidden>
-  <div class="toc-sheet" role="dialog" aria-modal="true" aria-label="章节目录">
-    <button class="close" id="tocClose" aria-label="关闭目录">×</button>
-    <h2>目录</h2>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-labelledby="tocTitle">
+    <button class="close" id="tocClose" type="button" aria-label="关闭目录">×</button>
+    <h2 id="tocTitle">目录</h2>
     <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
 <a href="./s01.html"><span>01</span>一个循环就够了</a>
 <a href="./s02.html"><span>02</span>加工具只加一行</a>

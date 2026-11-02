@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""导读 + 第 1–2 章（完整源码逐行）。"""
+"""导读 + 第 1–2 章（完整源码 + 关键行注解）。"""
 
 LEAD = ("这个仓库用 17 章的 Python 示例，把 Claude Code 这类编程 Agent 拆开给你看："
         "没有魔法，只有循环、工具、权限、上下文管理和一层层「补丁」。"
@@ -7,102 +7,54 @@ LEAD = ("这个仓库用 17 章的 Python 示例，把 Claude Code 这类编程 
 
 INTRO_HTML = r"""
 <div class="intro-card">
-  <h3>先记住一句话：模型负责「想」，代码负责「让它能动手」</h3>
-  <p>大模型本身只会输出文字。它能写出 <code>rm -rf build</code>，但它没有手，删不掉任何东西。
-  所谓 Agent，就是<strong>模型 + 一套让它能感知和行动的外壳</strong>。这个外壳，作者叫 <b>Harness</b>（载具）。</p>
-  <p>所以整本书不是「教模型变聪明」，而是「教你怎么造载具」：怎么把工具递给它、怎么拦危险操作、
+  <h3>模型负责「想」，代码负责「让它能动手」</h3>
+  <p>大模型只会输出文字。它能写出 <code>rm -rf build</code>，但没有手。所谓 Agent，就是
+  <strong>模型 + 一套让它能感知和行动的外壳</strong>——作者把它叫 <b>Harness</b>（载具）。</p>
+  <p>这本书不教模型变聪明，只教你怎么造载具：怎么把工具递过去、怎么拦危险操作、
   怎么在上下文快满时腾地方、怎么让多个 Agent 分工。</p>
 </div>
 
 <div class="intro-card warn-card">
-  <h3>先说清楚这份教程的覆盖范围</h3>
-  <p>不是 17 章都「完整源码 + 逐行」。真实情况如下，章节标题旁边也有对应标签：</p>
+  <h3>覆盖范围：不是每章都「逐行」</h3>
+  <p>章节标题旁会标出代码完整度和注解量，例如「核心节选 · 8 处注解」。
+  没有注解的行，就是留给你自己读的。</p>
   <table class="tbl">
-  <thead><tr><th style="width:96px">章节</th><th style="width:170px">代码呈现</th><th>讲解方式</th></tr></thead>
+  <thead><tr><th>章节</th><th>代码</th><th>注解方式</th></tr></thead>
   <tbody>
-  <tr><td>s01–s02</td><td><b>完整源码</b>（整个 code.py）</td><td>每一行都有注解</td></tr>
-  <tr><td>s03–s08</td><td><b>核心源码节选</b>（每章 1–3 段）</td><td>节选内逐行注解；未选中的部分不在文中</td></tr>
-  <tr><td>s09–s17</td><td><b>关键片段</b>（每章 1–4 段）</td><td>片段内逐行注解；其余机制分段说明，不冒充逐行</td></tr>
+  <tr><td>s01–s02</td><td><b>完整源码</b>（整个 code.py）</td><td>关键行注解，每章十几到三十几处</td></tr>
+  <tr><td>s03–s08</td><td><b>核心节选</b>（每章 1–3 段）</td><td>节选内关键行注解，其余行自行阅读</td></tr>
+  <tr><td>s09–s17</td><td><b>关键片段</b>（每章 1–4 段）</td><td>片段内关键行注解 + 分段说明</td></tr>
   </tbody>
   </table>
-  <p>每个代码块右上角标了 <code>L起–L止</code>，可以在固定 commit 的 GitHub 原文里逐行对照。
-  片段之间如果有省略，会另起一个代码块，不会把不相邻的代码拼在一起。</p>
+  <p>每段代码都标了 <code>L起–L止</code>，可对照固定 commit 的原文逐行读。</p>
 </div>
 
-<div class="intro-card">
-  <h3>全书的骨架，其实就 4 行</h3>
-<pre class="sh">while True:
-    response = LLM(messages, tools)     # 问模型
-    if 没有 tool_use: break              # 它不想动手了，收工
-    执行工具，把结果 append 回 messages   # 干活、记录
-# 然后继续下一圈</pre>
-  <p>后面 16 章，都是在这个循环<strong>外面</strong>加东西：加工具（s02）、加权限（s03）、
-  加钩子（s04）、加计划（s05）、加子 Agent（s06）……循环形状基本没变。
-  作者反复强调的就是这一点：<b>好的 Harness 是围绕循环加装，而不是把逻辑塞进循环</b>。</p>
-</div>
-
-<div class="intro-card">
-  <h3>把代码跑起来（按仓库 requirements.txt）</h3>
+<details class="before">
+  <summary>开始之前：环境、费用与安全</summary>
+  <p><b>依赖</b>（以仓库 requirements.txt 为准）：anthropic、python-dotenv、PyYAML。</p>
 <pre class="sh">git clone https://github.com/shareAI-lab/learn-claude-code
 cd learn-claude-code
-python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt                         # anthropic、python-dotenv、PyYAML
-cp .env.example .env 2>/dev/null || printf 'ANTHROPIC_API_KEY=\nMODEL_ID=\n' > .env
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+printf 'ANTHROPIC_API_KEY=\nMODEL_ID=\n' &gt; .env
 python s01_agent_loop/code.py</pre>
-  <p><b>从仓库根目录运行</b>：s07 会在工作目录下找 <code>skills/</code>，s08 会把 transcript 写到
-  <code>./.transcripts/</code>，所有文件工具都以「启动时的工作目录」为根。换目录跑，行为会跟着变。</p>
-  <p><b>密钥只写进本机 <code>.env</code></b>，不要贴进对话、截图或这份 HTML。模型名（<code>MODEL_ID</code>）
-  按你自己账号能用的写，教程里的示例名不保证可用。</p>
-  <p><b>自定义地址</b>必须兼容 Anthropic Messages 协议（<code>/v1/messages</code>、相同的请求/响应结构），
-  不是随便填一个「中转地址」就能跑；<code>ANTHROPIC_BASE_URL</code> 只是换 base URL，不改变协议。</p>
-</div>
-
-<div class="intro-card warn-card">
-  <h3>跑之前请知道：它会真的动你的机器</h3>
-  <p>这些示例会执行 shell 命令、读写文件、发起真实的模型请求——<b>会产生费用</b>。
-  建议在一台干净的虚拟机、容器或专门的练习目录里跑，别在有密钥和重要数据的目录里试。</p>
-  <p>教程里的练习都<b>不要求你关掉权限检查</b>，也不建议用「默认允许危险操作」来图省事。
-  s03 的黑名单只是字符串匹配，不是沙箱，更不是安全边界。</p>
-</div>
+  <p><b>从仓库根目录运行</b>：s07 在 cwd 下找 <code>skills/</code>，s08 把记录写到
+  <code>./.transcripts/</code>，文件工具都以启动目录为根。</p>
+  <p><b>密钥只放本机 <code>.env</code></b>，不要贴进对话或截图。模型名按你账号实际权限填，
+  教程里的示例名不保证可用。<code>ANTHROPIC_BASE_URL</code> 只换地址，服务仍须兼容
+  Anthropic Messages 协议。</p>
+  <p><b>这些示例会真的执行命令、读写文件、调用模型（产生费用）。</b>建议在干净的虚拟机、
+  容器或专门目录里练手，不要在有密钥和重要数据的目录里试。教程练习不需要关闭权限检查。</p>
+</details>
 
 <div class="intro-card">
-  <h3>这本书怎么读</h3>
-  <p><b>第 1–2 章：</b>完整代码，值得照着敲一遍，先把「循环 + 工具分发」的手感建立起来。</p>
-  <p><b>第 3–8 章：</b>看节选，重点是每章「加在循环外面的那一层」——权限、钩子、计划、子 Agent、技能、压缩。</p>
-  <p><b>第 9–17 章：</b>看机制和关键片段。s15 一个文件 3000 多行，本教程只挑主循环、工具池、hook 注册三处，够你看懂它是怎么拼起来的。</p>
-  <p>每章结构一致：解决什么问题 → 思路 → 代码 → 记住这几条 → 容易踩的坑 → 动手改一改。
-  文中会尽量区分<b>「本版就是这样实现的」</b>、<b>「这里是教学简化」</b>和<b>「生产环境才会这么做」</b>；看到「建议」「生产环境」这类词，基本说明源码里没有。</p>
-</div>
-
-<h3 style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:34px 0 6px;font-weight:700">17 章地图</h3>
-<table class="tbl">
-<thead><tr><th style="width:64px">章</th><th style="width:150px">主题</th><th>一句话</th></tr></thead>
-<tbody>
-<tr><td>s01</td><td>Agent Loop</td><td>一个 while 循环 + 一个 bash，就是最小 Agent</td></tr>
-<tr><td>s02</td><td>Tool Use</td><td>加工具 = 加 schema + 加 handler + 表里一行</td></tr>
-<tr><td>s03</td><td>Permission</td><td>执行前过三道闸：黑名单、规则、问人（仅此而已，不是沙箱）</td></tr>
-<tr><td>s04</td><td>Hooks</td><td>把扩展逻辑挂在循环上，而不是写进循环里</td></tr>
-<tr><td>s05</td><td>TodoWrite</td><td>清单由工具维护；连续 3 轮不更新才追加一条提醒</td></tr>
-<tr><td>s06</td><td>Subagent</td><td>子任务开一段全新对话，只把结论带回来（仅上下文隔离）</td></tr>
-<tr><td>s07</td><td>Skill Loading</td><td>目录常驻 system prompt，正文调 load_skill 才读</td></tr>
-<tr><td>s08</td><td>Context Compact</td><td>四步压缩：外置 → 归档 → 截断 → 摘要</td></tr>
-<tr><td>s09</td><td>Memory</td><td>跨会话记忆：目录 + 按相关性召回，失败退回关键词</td></tr>
-<tr><td>s10</td><td>Task System</td><td>任务落盘成文件；依赖「未完成」才阻塞，没有并发锁</td></tr>
-<tr><td>s11</td><td>Background</td><td>慢命令丢后台线程，主循环继续转（进程退出就没了）</td></tr>
-<tr><td>s12</td><td>Cron</td><td>进程内定时轮询，到点把 prompt 塞进队列</td></tr>
-<tr><td>s13</td><td>Agent Teams</td><td>多线程队友抢任务：文件锁 + 每人一个进行中任务 + 可选 worktree</td></tr>
-<tr><td>s14</td><td>MCP</td><td>内存版 mock：工具清单 + 宿主策略，没有真实传输层</td></tr>
-<tr><td>s15</td><td>Integrated</td><td>把机制装进一个循环；本教程只看主循环、工具池、hook 三处</td></tr>
-<tr><td>s16</td><td>Workflow</td><td>脚本定编排，模型做单步；默认跑的是 mock runner</td></tr>
-<tr><td>s17</td><td>Goal Loop</td><td>另起一次无工具的模型调用做裁决，仍然可能判错</td></tr>
-</tbody>
-</table>
-
-<div class="intro-card">
-  <h3>这一版改了什么</h3>
-  <p>按 commit <code>7226f55</code>（2026-10-27）逐条核对后，修正了：覆盖范围声明、s05 的 Todo 提醒机制、
-  s10 的依赖判定、s15 缺失的代码、s08 的四步压缩，以及「黑名单=沙箱」「子 Agent=隔离」「worktree=隔离」
-  「cron 进程退出仍执行」等过度表述。每章的练习也换成了源码里真实存在的标识符。</p>
+  <h3>怎么读</h3>
+  <p><b>第 1–2 章</b>：完整代码，先建立「循环 + 工具分发」的手感。</p>
+  <p><b>第 3–8 章</b>：看每章加在循环外面的那一层——权限、钩子、计划、子 Agent、技能、压缩。</p>
+  <p><b>第 9–17 章</b>：看机制和关键片段；s15 一个文件 3000 多行，这里只挑主循环、工具池、hook 三处。</p>
+  <p>文中会尽量区分<b>本版实现</b>、<b>教学简化</b>和<b>生产建议</b>；看到「生产环境」这类词，
+  基本说明源码里没有。</p>
 </div>
 """
 
@@ -213,7 +165,7 @@ CH_A = [
         "try": "把 SYSTEM 里的 \"Act, don't explain.\" 删掉，再问「看看这个目录有什么」。验收：回答明显变长、开始解释而不是直接调用 bash。改完记得改回来。",
     },
     {
-        "id": "s02", "no": "02",
+        "id": "s02", "no": "02", "full": True,
         "title": "加工具只加一行", "sub": "Tool Use",
         "quote": "循环不用动，新工具注册进 dispatch map 就行",
         "problem": "只有 bash 时，模型读文件要 cat、改文件要 sed，既容易写错，也没法限制它乱翻文件。"
