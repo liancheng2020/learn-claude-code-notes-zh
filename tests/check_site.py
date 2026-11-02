@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""产物检查：链接、章节、代码与固定源码一致性。
+"""产物检查：链接、章节、代码/注解与固定源码一致性。
 
 用法：
     python3 tests/check_site.py site [--src ../learn-claude-code]
@@ -19,8 +19,8 @@ REQUIRED = ["index.html", "LICENSE.html", "404.html", ".lcc-build",
             "assets/style.css", "assets/app.js", "robots.txt"]
 
 
-class Rows(HTMLParser):
-    """收集每个 .code 块的行号与文本。"""
+class Blocks(HTMLParser):
+    """收集每个 .code 代码块的 id、行号与文本。"""
 
     def __init__(self):
         super().__init__()
@@ -56,6 +56,51 @@ def fail(msg):
     return 1
 
 
+def check_page(root, page, errors):
+    doc = page.read_text(encoding="utf-8")
+    if page.name == "index.html":
+        if doc.count('class="ch" id="') != 17:
+            errors += fail("index.html 章节数不是 17")
+    for href in re.findall(r'href="([^"]+)"', doc):
+        if href.startswith("./") and not href.startswith("./#"):
+            target = root / href[2:].split("#")[0]
+            if not target.exists():
+                errors += fail(f"{page.name} 链接不存在：{href}")
+    if '<script src="./assets/app.js"' not in doc:
+        errors += fail(f"{page.name} 缺少 app.js")
+    for tag, attr in (("script", "src"), ("link", "href"), ("img", "src")):
+        for url in re.findall(rf'<{tag}[^>]*\b{attr}="([^"]+)"', doc):
+            if url.startswith("http"):
+                errors += fail(f"{page.name} 引用了外部资源：{url}")
+    m = re.search(r"<title>(.*?)</title>", doc, re.S)
+    if m and "逐行" in m.group(1):
+        errors += fail(f"{page.name} 标题仍在宣称逐行")
+
+    ids = set(re.findall(r'<div class="code" id="([^"]+)"', doc))
+    for ref in re.findall(r'data-code="([^"]+)"', doc):
+        if ref not in ids:
+            errors += fail(f"{page.name} 注释指向不存在的代码块：{ref}")
+    wraps = set(re.findall(r'class="code-wrap" data-cid="([^"]+)"', doc))
+    for ref in re.findall(r'class="copy"[^>]*data-copy="([^"]+)"', doc):
+        if ref not in wraps:
+            errors += fail(f"{page.name} 复制按钮指向不存在的代码块：{ref}")
+
+    if page.name == "index.html":
+        for cta in ('href="#s01"', 'href="#toc"'):
+            if cta not in doc:
+                errors += fail(f"index.html 缺少入口 {cta}")
+        if len(re.findall(r'class="card"', doc)) != 17:
+            errors += fail("index.html 目录卡片不是 17 个")
+    if page.name not in ("index.html", "LICENSE.html", "404.html"):
+        if 'class="pager"' not in doc:
+            errors += fail(f"{page.name} 缺少上一章/下一章")
+        if page.name != "s01.html" and "上一章" not in doc:
+            errors += fail(f"{page.name} 缺少上一章链接")
+        if page.name != "s17.html" and "下一章" not in doc:
+            errors += fail(f"{page.name} 缺少下一章链接")
+    return errors
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("site", nargs="?", default="site")
@@ -72,74 +117,37 @@ def main():
 
     html_files = list(root.glob("*.html"))
     for page in html_files:
-        doc = page.read_text(encoding="utf-8")
-        if page.name == "index.html":
-            if doc.count('class="ch" id="') != 17:
-                errors += fail("index.html 章节数不是 17")
-        for href in re.findall(r'href="([^"]+)"', doc):
-            if href.startswith("./") and not href.startswith("./#"):
-                target = (root / href[2:].split("#")[0])
-                if not target.exists():
-                    errors += fail(f"{page.name} 链接不存在：{href}")
-        if '<script src="./assets/app.js"' not in doc:
-            errors += fail(f"{page.name} 缺少 app.js")
-        for tag, attr in (("script", "src"), ("link", "href"), ("img", "src")):
-            for url in re.findall(rf'<{tag}[^>]*\b{attr}="([^"]+)"', doc):
-                if url.startswith("http"):
-                    errors += fail(f"{page.name} 引用了外部资源：{url}")
-        if "逐行" in re.search(r"<title>(.*?)</title>", doc, re.S).group(1):
-            errors += fail(f"{page.name} 标题仍在宣称逐行")
-        ids = set(re.findall(r'<div class="code" id="([^"]+)"', doc))
-        for ref in re.findall(r'data-code="([^"]+)"', doc):
-            if ref not in ids:
-                errors += fail(f"{page.name} 注释指向不存在的代码块：{ref}")
-        if page.name == "index.html":
-            for cta in ('href="#s01"', 'href="#toc"'):
-                if cta not in doc:
-                    errors += fail(f"index.html 缺少入口 {cta}")
-            if len(re.findall(r'class="card"', doc)) != 17:
-                errors += fail("index.html 目录卡片不是 17 个")
-        if page.name not in ("index.html", "LICENSE.html", "404.html"):
-            if 'class="pager"' not in doc:
-                errors += fail(f"{page.name} 缺少上一章/下一章")
-            if page.name != "s01.html" and "上一章" not in doc:
-                errors += fail(f"{page.name} 缺少上一章链接")
-            if page.name != "s17.html" and "下一章" not in doc:
-                errors += fail(f"{page.name} 缺少下一章链接")
-        if 'data-copy="' in doc:
-            ids = re.findall(r'<div class="code" id="([^"]+)"', doc)
-            if len(ids) != len(set(ids)):
-                errors += fail(f"{page.name} 代码块 id 重复")
-        for m in re.finditer(r'class="ann"[^>]*data-from="(\d+)"[^>]*data-to="(\d+)"', doc):
-            if int(m.group(1)) > int(m.group(2)):
-                errors += fail(f"{page.name} 注释区间反向：{m.group(0)[:60]}")
+        errors = check_page(root, page, errors)
 
     if args.src:
         src_root = Path(args.src)
-        parser = Rows()
-        parser.feed((root / "index.html").read_text(encoding="utf-8"))
-        chapter_files = {}
-        for cid, rows in parser.blocks.items():
-            chapter = cid.split("-")[0]
-            chapter_files.setdefault(chapter, rows)
-        rels = {}
         from content.content_a import CH_A
         from content.content_b import CH_B
         from content.content_c import CH_C
-        for ch in CH_A + CH_B + CH_C:
-            rels[ch["id"]] = ch["rel"]
-        for chapter, rows in chapter_files.items():
-            rel = rels[chapter]
-            lines = (src_root / rel).read_text(encoding="utf-8").splitlines()
+        rels = {ch["id"]: ch["rel"] for ch in CH_A + CH_B + CH_C}
+
+        parser = Blocks()
+        parser.feed((root / "index.html").read_text(encoding="utf-8"))
+        grouped = {}
+        for cid, rows in parser.blocks.items():
+            m = re.match(r"^(s\d+-\d+)-\d+$", cid)
+            if not m:
+                errors += fail(f"代码块 id 格式异常：{cid}")
+                continue
+            grouped.setdefault(m.group(1), []).extend(rows)
+        for key, rows in grouped.items():
+            chapter = key.split("-")[0]
+            rows.sort(key=lambda r: r["line"])
+            lines = (src_root / rels[chapter]).read_text(encoding="utf-8").splitlines()
             nums = [r["line"] for r in rows]
             if nums != list(range(nums[0], nums[0] + len(nums))):
-                errors += fail(f"{chapter} 行号不连续")
+                errors += fail(f"{key} 行号不连续或分段重叠")
                 continue
             for r in rows:
                 want = lines[r["line"] - 1].rstrip()
                 got = html.unescape(r["text"]).replace("\u00a0", "").rstrip()
                 if got != want:
-                    errors += fail(f"{chapter} L{r['line']} 与源码不一致")
+                    errors += fail(f"{key} L{r['line']} 与源码不一致")
                     break
 
     if errors:

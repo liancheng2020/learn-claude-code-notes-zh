@@ -1,9 +1,11 @@
 # Learn Claude Code · 大白话教程
 
-**在线阅读：https://liancheng2020.github.io/learn-claude-code-zh/**
+**在线阅读：https://liancheng2020.github.io/learn-claude-code-notes-zh/**
 
-把 [learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 的 17 章拆成中文大白话：
-讲清每一层为什么存在，并区分 **本版实现 / 教学简化 / 生产建议**。
+用大白话读懂 Agent 的循环、工具、上下文与协作机制。
+
+基于 [learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 的非官方中文教程：
+用大白话讲解关键源码、运行机制与动手练习，并区分 **本版实现 / 教学简化 / 生产建议**。
 
 > 非官方社区教程。代码逐字取自上游 commit `7226f555d48900076eba126acf37c9ed5f002b5d`（2026-10-27）。
 > 构建时会校验 git HEAD 与工作区，不匹配直接失败。
@@ -36,7 +38,8 @@ python3 -m http.server -d site 8000     # http://localhost:8000
 
 ```bash
 python3 -m unittest discover -s tests -v      # 路径安全、版本校验、原子替换
-python3 tests/check_site.py site              # 链接、章节统计、代码与固定源码一致性
+python3 tests/check_site.py site --src ../learn-claude-code   # 链接、章节、代码与源码一致
+python3 tests/ui_smoke.py --site site        # 复制失败/成功、目录焦点、320px 许可页（需 Chrome，缺失则跳过）
 ```
 
 ## 目录

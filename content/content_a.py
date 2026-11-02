@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """导读 + 第 1–2 章（完整源码 + 关键行注解）。"""
 
-LEAD = ("这个仓库用 17 章的 Python 示例，把 Claude Code 这类编程 Agent 拆开给你看："
-        "没有魔法，只有循环、工具、权限、上下文管理和一层层「补丁」。"
-        "本教程按 commit 7226f55 讲，代码全部取自该版本的源文件。")
+LEAD = "用大白话读懂 Agent 的循环、工具、上下文与协作机制。"
 
 INTRO_HTML = r"""
 <div class="intro-card">

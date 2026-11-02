@@ -43,7 +43,7 @@ COMMIT = "7226f555d48900076eba126acf37c9ed5f002b5d"
 COMMIT_SHORT = COMMIT[:7]
 COMMIT_DATE = "2026-10-27"
 UPSTREAM = "https://github.com/shareAI-lab/learn-claude-code"
-TUTORIAL_REPO = "https://github.com/liancheng2020/learn-claude-code-zh"
+TUTORIAL_REPO = "https://github.com/liancheng2020/learn-claude-code-notes-zh"
 PAGES = ["index.html", "LICENSE.html", "404.html"]
 MARKER = ".lcc-build"
 CHAPTERS = CH_A + CH_B + CH_C
@@ -268,28 +268,40 @@ def render_code(src: Source, ch: dict) -> str:
     parts = []
     for idx, (a, z, notes) in enumerate(spans):
         cid = f"{ch['id']}-{idx}"
-        notes_html = "".join(
-            f'<div class="ann" data-code="{cid}" data-from="{s}" data-to="{e}" '
-            f'role="button" tabindex="0" aria-pressed="false" '
-            f'aria-label="第 {s} 到 {e} 行，回车固定高亮">'
-            f'<span class="lnref">L{s}–{e}</span><p>{t}</p></div>'
-            for s, e, t in annotated(notes, lines, a, z))
-        rows = []
-        for i in range(a, z + 1):
-            text = lines[i - 1]
-            body = "&nbsp;" if not text.strip() else render_text(text, hl.get(i, []))
-            rows.append(f'<div class="row" data-line="{i}"><span class="ln">{i}</span>'
-                        f'<span class="tx">{body}</span></div>')
+        groups = annotated(notes, lines, a, z)
+        segments = [(s, e, [t]) for s, e, t in groups]
+        if groups and groups[-1][1] < z:
+            segments.append((groups[-1][1] + 1, z, []))
+        if not groups:
+            segments = [(a, z, [])]
+
+        seg_html = []
+        for si, (s, e, texts) in enumerate(segments):
+            sid = f"{cid}-{si}"
+            rows = []
+            for i in range(s, e + 1):
+                text = lines[i - 1]
+                body = "&nbsp;" if not text.strip() else render_text(text, hl.get(i, []))
+                rows.append(f'<div class="row" data-line="{i}"><span class="ln">{i}</span>'
+                            f'<span class="tx">{body}</span></div>')
+            ann_html = "".join(
+                f'<div class="ann" data-code="{sid}" data-from="{s}" data-to="{e}" '
+                f'role="button" tabindex="0" aria-pressed="false" '
+                f'aria-label="第 {s} 到 {e} 行，回车固定高亮">'
+                f'<span class="lnref">L{s}–{e}</span><p>{t}</p></div>' for t in texts)
+            seg_html.append(
+                f'<div class="seg"><div class="code-scroll"><div class="code" id="{sid}">'
+                f'{"".join(rows)}</div></div><div class="anns">{ann_html}</div></div>')
+
         parts.append(f"""
-<div class="code-wrap">
+<div class="code-wrap" data-cid="{cid}">
   <div class="code-head">
     <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
     <span class="file">{esc(ch['rel'])} · L{a}–{z}</span>
     <button class="copy" type="button" data-copy="{cid}">复制</button>
     <a href="{gh_link(ch, a, z)}" target="_blank" rel="noreferrer">GitHub 原文 ↗</a>
   </div>
-  <div class="code-scroll"><div class="code" id="{cid}">{''.join(rows)}</div></div>
-  <div class="anns">{notes_html}</div>
+  {''.join(seg_html)}
 </div>""")
     return "\n".join(parts)
 
@@ -431,7 +443,7 @@ def build_index(src: Source) -> str:
     chapters = "\n".join(chapter_fragment(src, ch, level="h2") for ch in CHAPTERS)
     body = f"""
 <header class="hero">
-  <div class="kicker">Learn Claude Code · 大白话版</div>
+  <div class="kicker">Learn Claude Code · 大白话教程</div>
   <h1>看懂一个 AI 编程 Agent<br>是怎么造出来的</h1>
   <p class="lead">{esc(INTRO['lead'])}</p>
   <div class="cta">
@@ -450,7 +462,7 @@ def build_index(src: Source) -> str:
 <section class="outro" id="outro">{OUTRO}</section>
 {FOOTER}"""
     return page("Learn Claude Code · 大白话教程",
-                f"按 commit {COMMIT_SHORT} 讲解 learn-claude-code 的 17 章：关键行注解 + 分段说明，单页完整阅读。",
+                f"基于 learn-claude-code 的非官方中文教程：用大白话讲解关键源码、运行机制与动手练习。代码固定于 commit {COMMIT_SHORT}。",
                 body, nav=nav_anchors(), body_class="full")
 
 

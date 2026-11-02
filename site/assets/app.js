@@ -29,44 +29,80 @@
     });
   }
 
-  /* ---------- 复制代码（只复制源码） ---------- */
-  [].slice.call(document.querySelectorAll('.copy')).forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var code = document.getElementById(btn.dataset.copy);
-      if (!code) return;
-      var text = [].slice.call(code.querySelectorAll('.row .tx')).map(function (tx) {
-        return tx.textContent.replace(/\u00a0/g, '');
-      }).join('\n');
-      var done = function () {
-        var old = btn.textContent;
-        btn.textContent = '已复制';
-        setTimeout(function () { btn.textContent = old; }, 1500);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
-      } else {
-        fallback(text, done);
-      }
-    });
-  });
-  function fallback(text, done) {
+  /* ---------- 复制代码：只复制源码，成功才提示 ---------- */
+  function sourceText(wrap) {
+    return [].slice.call(wrap.querySelectorAll('.row .tx')).map(function (tx) {
+      return tx.textContent.replace(/\u00a0/g, '');
+    }).join('\n');
+  }
+
+  function legacyCopy(text) {
     var ta = document.createElement('textarea');
     ta.value = text;
     ta.setAttribute('readonly', '');
+    ta.setAttribute('aria-hidden', 'true');
     ta.style.position = 'fixed';
     ta.style.top = '-1000px';
+    ta.style.opacity = '0';
     document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); done(); } catch (e) { /* ignore */ }
-    document.body.removeChild(ta);
+    var ok = false;
+    try {
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      ok = document.execCommand('copy') === true;
+    } catch (e) {
+      ok = false;
+    } finally {
+      document.body.removeChild(ta);
+    }
+    return ok;
   }
+
+  function copyText(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        return navigator.clipboard.writeText(text).then(
+          function () { return true; },
+          function () { return legacyCopy(text); }
+        );
+      } catch (e) {
+        return Promise.resolve(legacyCopy(text));
+      }
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function flash(btn, text, state) {
+    if (btn._flashTimer) clearTimeout(btn._flashTimer);
+    if (!btn._label) btn._label = btn.textContent;
+    btn.textContent = text;
+    btn.dataset.state = state;
+    btn._flashTimer = setTimeout(function () {
+      btn.textContent = btn._label;
+      delete btn.dataset.state;
+      btn._flashTimer = null;
+    }, 1600);
+  }
+
+  [].slice.call(document.querySelectorAll('.copy')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var wrap = btn.closest('.code-wrap');
+      if (!wrap) { flash(btn, '复制失败', 'err'); return; }
+      var token = (btn._token || 0) + 1;
+      btn._token = token;
+      copyText(sourceText(wrap)).then(function (ok) {
+        if (btn._token !== token) return;       // 连续点击时只保留最后一次反馈
+        flash(btn, ok ? '已复制' : '复制失败', ok ? 'ok' : 'err');
+      });
+    });
+  });
 
   /* ---------- 注释 ↔ 代码行 ---------- */
   function rowsOf(ann) {
-    var wrap = ann.closest('.code-wrap');
-    if (!wrap) return [];
+    var seg = ann.closest('.seg');
+    if (!seg) return [];
     var from = +ann.dataset.from, to = +ann.dataset.to;
-    return [].slice.call(wrap.querySelectorAll('.row')).filter(function (r) {
+    return [].slice.call(seg.querySelectorAll('.row')).filter(function (r) {
       var n = +r.dataset.line;
       return n >= from && n <= to;
     });
@@ -83,10 +119,6 @@
       var on = ann.getAttribute('aria-pressed') !== 'true';
       ann.setAttribute('aria-pressed', on ? 'true' : 'false');
       paint(ann, on);
-      if (on) {
-        var first = rowsOf(ann)[0];
-        if (first) first.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
     }
     ann.addEventListener('click', toggle);
     ann.addEventListener('keydown', function (e) {
@@ -136,11 +168,13 @@
     updateActive();
   }
 
-  /* ---------- 目录抽屉：焦点陷阱 / 关闭 / 恢复 ---------- */
+  /* ---------- 目录抽屉：背景隔离 / 焦点陷阱 / 关闭恢复 ---------- */
   var btn = document.getElementById('tocBtn');
   var panel = document.getElementById('tocPanel');
   var closeBtn = document.getElementById('tocClose');
-  var shell = document.querySelector('.shell');
+  var backgrounds = ['.topbar', '.layout'].map(function (sel) {
+    return document.querySelector(sel);
+  }).filter(Boolean);
   var lastFocus = null;
 
   function focusables() {
@@ -148,15 +182,25 @@
     return [].slice.call(panel.querySelectorAll('a[href], button:not([disabled])'))
       .filter(function (el) { return el.offsetParent !== null; });
   }
-  function setPanel(open) {
+
+  function setBackgroundInert(on) {
+    backgrounds.forEach(function (el) {
+      el.inert = on;
+      if (on) el.setAttribute('aria-hidden', 'true');
+      else el.removeAttribute('aria-hidden');
+    });
+  }
+
+  function setPanel(open, opts) {
     if (!panel || !btn) return;
+    opts = opts || {};
     if (open) {
       lastFocus = (document.activeElement && document.activeElement !== document.body)
         ? document.activeElement : btn;
       panel.hidden = false;
       panel.classList.add('open');
       document.body.classList.add('toc-open');
-      if (shell) shell.inert = true;
+      setBackgroundInert(true);
       btn.setAttribute('aria-expanded', 'true');
       var first = focusables()[0];
       if (first) first.focus();
@@ -164,18 +208,21 @@
       panel.classList.remove('open');
       panel.hidden = true;
       document.body.classList.remove('toc-open');
-      if (shell) shell.inert = false;
+      setBackgroundInert(false);
       btn.setAttribute('aria-expanded', 'false');
-      var back = (lastFocus && lastFocus !== document.body && lastFocus.focus) ? lastFocus : btn;
-      back.focus();
+      if (!opts.skipFocus) {
+        var back = (lastFocus && lastFocus !== document.body && lastFocus.focus) ? lastFocus : btn;
+        back.focus();
+      }
     }
   }
+
   if (btn && panel) {
     btn.addEventListener('click', function () { setPanel(panel.hidden); });
     if (closeBtn) closeBtn.addEventListener('click', function () { setPanel(false); });
     panel.addEventListener('click', function (e) {
-      if (e.target === panel) setPanel(false);
-      if (e.target.closest('a')) setPanel(false);
+      if (e.target === panel) { setPanel(false); return; }
+      if (e.target.closest('a')) setPanel(false, { skipFocus: true });  // 让锚点自己定位
     });
     panel.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { e.preventDefault(); setPanel(false); return; }

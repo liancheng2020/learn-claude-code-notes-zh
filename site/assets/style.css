@@ -146,6 +146,10 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .code-head .copy{margin-left:auto;border:1px solid var(--line);background:var(--panel);color:var(--mid);
   border-radius:7px;padding:2px 9px;font-size:11.5px;cursor:pointer;font-family:var(--sans)}
 .code-head .copy:hover{color:var(--accent);border-color:var(--accent)}
+.code-head .copy[data-state="ok"]{color:var(--ok);border-color:var(--ok)}
+.code-head .copy[data-state="err"]{color:var(--warn);border-color:var(--warn)}
+.seg + .seg{border-top:1px dashed var(--line)}
+.seg .anns{padding:6px 10px 10px}
 .code-head a{font-size:11.5px;color:var(--mid)}
 .code-scroll{overflow-x:auto}
 .code{padding:12px 0 14px;font-family:var(--mono);font-size:13px;line-height:1.62;tab-size:4;
@@ -206,6 +210,9 @@ footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);color:v
   font-size:22px;cursor:pointer;padding:0 4px}
 body.toc-open{overflow:hidden}
 .outro{margin-top:40px}
+.license{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font-size:13px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.problem code{overflow-wrap:anywhere}
+
 @media (max-width:1000px){
   .layout{grid-template-columns:minmax(0,1fr)}
   .side{display:none}
@@ -225,6 +232,10 @@ body.toc-open{overflow:hidden}
   .tbl td:nth-child(2){font-weight:600}
   .pager a{max-width:46%}
   .ann{grid-template-columns:60px minmax(0,1fr);font-size:13.5px}
+}
+@media (max-width:360px){
+  .topbar-inner{flex-wrap:wrap;row-gap:2px}
+  .topbar .actions{width:100%;justify-content:flex-end;margin-left:0}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
