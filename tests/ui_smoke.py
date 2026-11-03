@@ -82,6 +82,17 @@ window.addEventListener('load',function(){setTimeout(function(){
 },300)});
 """
 
+THEME_JS = r"""
+window.addEventListener('load',function(){setTimeout(function(){
+ var th=document.getElementById('themeBtn');
+ var sysDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+ var o={sys:sysDark?'dark':'light'};
+ th.click(); o.t1=document.documentElement.dataset.theme; o.i1=th.textContent;
+ th.click(); o.t2=document.documentElement.dataset.theme; o.i2=th.textContent;
+ document.title='UI '+JSON.stringify(o);
+},300)});
+"""
+
 W320_JS = r"""
 window.addEventListener('load',function(){setTimeout(function(){
  parent.postMessage({w:document.documentElement.clientWidth,
@@ -113,6 +124,11 @@ def main():
             errors.append(f"复制成功路径异常：{r}")
         if r["hasLine"] or r["hasAnn"] or not r["first"].startswith("class TodoManager:"):
             errors.append(f"复制内容不纯：{r}")
+
+        r = dump(chrome, work / "s05.html", THEME_JS)
+        want = "light" if r["sys"] == "dark" else "dark"
+        if r.get("t1") != want or r.get("t2") != r["sys"]:
+            errors.append(f"主题切换不是一次生效：{r}")
 
         r = dump(chrome, work / "index.html", TOC_JS)
         for key in ("inertTop", "inertLayout", "focusIn", "lock", "closed", "back"):
@@ -148,7 +164,7 @@ def main():
             for e in errors:
                 print(" -", e)
             return 1
-        print("OK：复制失败/成功、目录焦点隔离、320px 许可页")
+        print("OK：复制失败/成功、目录焦点隔离、主题一次切换、320px 许可页")
         return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -6,25 +6,32 @@
   var root = document.documentElement;
   var themeBtn = document.getElementById('themeBtn');
   function themeName(t) { return t === 'dark' ? '深色' : t === 'light' ? '浅色' : '跟随系统'; }
+  var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function effective() {
+    if (root.dataset.theme === 'light' || root.dataset.theme === 'dark') return root.dataset.theme;
+    return media && media.matches ? 'dark' : 'light';
+  }
   function applyTheme(t, init) {
     if (t === 'light' || t === 'dark') root.dataset.theme = t;
     else if (!init) delete root.dataset.theme;
     if (themeBtn) {
-      themeBtn.title = '主题：' + themeName(t) + '（点击切换）';
-      themeBtn.setAttribute('aria-label', '当前主题：' + themeName(t) + '，点击切换');
+      var now = effective();
+      var next = now === 'dark' ? '浅色' : '深色';
+      themeBtn.textContent = now === 'dark' ? '☾' : '☀';
+      themeBtn.title = '当前' + (now === 'dark' ? '深色' : '浅色') + '，点击切换为' + next;
+      themeBtn.setAttribute('aria-label', '当前' + (now === 'dark' ? '深色' : '浅色') + '，点击切换为' + next);
     }
   }
   var stored = null;
   try { stored = localStorage.getItem('lcc-theme'); } catch (e) { /* 隐私模式 */ }
   applyTheme(stored, true);
+  if (media && media.addEventListener) {
+    media.addEventListener('change', function () { if (!root.dataset.theme) applyTheme(null, true); });
+  }
   if (themeBtn) {
     themeBtn.addEventListener('click', function () {
-      var cur = root.dataset.theme;
-      var next = cur === 'dark' ? null : cur === 'light' ? 'dark' : 'light';
-      try {
-        if (next) localStorage.setItem('lcc-theme', next);
-        else localStorage.removeItem('lcc-theme');
-      } catch (e) { /* ignore */ }
+      var next = effective() === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('lcc-theme', next); } catch (e) { /* ignore */ }
       applyTheme(next);
     });
   }
