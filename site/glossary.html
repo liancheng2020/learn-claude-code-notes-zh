@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="本教程术语表：Harness、上下文、压缩、外置、锁、runner 等词的白话解释。">
+<meta name="color-scheme" content="light dark">
+<title>术语表 · Learn Claude Code 大白话教程</title>
+<link rel="icon" href="./assets/favicon.ico" sizes="any">
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+<script>try{var t=localStorage.getItem('lcc-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body class="">
+<a id="top"></a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="brand"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></span>
+    <button class="toc-btn" id="tocBtn" type="button" aria-expanded="false" aria-controls="tocPanel">目录</button>
+    <div class="actions">
+      <a class="plain" href="https://github.com/liancheng2020/learn-claude-code-notes-zh" target="_blank" rel="noreferrer">本站源码</a>
+      <a class="plain" href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noreferrer">原仓库</a>
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</header>
+<div class="layout">
+<aside class="side"><h2>章节目录</h2><nav aria-label="章节目录"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav></aside>
+<main>
+
+  <article class="ch">
+    <div class="kicker">Glossary</div>
+    <h1>术语表</h1>
+    <p class="lead">笔记里反复出现的词，先在这里对齐；解释按本教程的用法，不是教科书定义。</p>
+    <div class="table-wrap">
+      <table class="gloss">
+        <thead><tr><th>术语</th><th>一句话解释</th><th>常见误解</th></tr></thead>
+        <tbody><tr><td>Agent（智能体）</td><td>模型 + 一套能感知、能动手的外壳</td><td>不是「会聊天的模型」，也不是工作流编排器</td></tr><tr><td>Harness（载具）</td><td>让模型能调用工具、管理上下文、被约束的那层代码</td><td>不是模型本身，也不等于框架</td></tr><tr><td>工具调用（tool_use）</td><td>模型说「帮我执行这个」，并给出参数</td><td>不是模型真的执行了代码</td></tr><tr><td>tool_result</td><td>执行完塞回给模型的结果</td><td>它属于 user 消息，不是 assistant</td></tr><tr><td>上下文 / 上下文窗口</td><td>这次请求能带上的全部文字，有硬上限</td><td>不是「记忆」，也不会自动保留</td></tr><tr><td>token</td><td>计费和窗口的计量单位，约等于字/词片段</td><td>不是字符数；中文通常更费 token</td></tr><tr><td>系统提示词（system）</td><td>每轮都放在最前面的规则和身份说明</td><td>不是用户消息，模型不能改它</td></tr><tr><td>hook</td><td>挂在循环事件上的回调，如工具执行前后</td><td>不是「插件」，也不一定异步</td></tr><tr><td>权限闸门</td><td>工具执行前的检查：黑名单、规则、问人</td><td>不是沙箱；它只挡已知模式</td></tr><tr><td>子 Agent（subagent）</td><td>用全新上下文再跑一个循环，只返回结论</td><td>不是新进程；文件、权限和父级共享</td></tr><tr><td>上下文压缩</td><td>上下文快满时，外置/归档/截断/摘要</td><td>不是删除历史；原文通常落盘</td></tr><tr><td>transcript</td><td>压缩前保存的完整对话记录</td><td>不只给人排查；模型也能按消息里的路径用 read_file 读回</td></tr><tr><td>外置（persist）</td><td>把大结果写进文件，上下文里只留路径</td><td>不是删除；按路径还能读回来</td></tr><tr><td>占位（placeholder）</td><td>用一行 `[saved at ...]` 代替大段内容</td><td>不是空值，模型可以据此去读文件</td></tr><tr><td>摘要（summary）</td><td>让模型把历史压成事实清单</td><td>会丢细节，所以放在最后一步</td></tr><tr><td>预算（budget）</td><td>给 token / 字符数设的上限</td><td>不是费用账单，但决定何时停止</td></tr><tr><td>幂等</td><td>重复执行一次和多次，结果一样</td><td>不是「加了锁」；并发下仍需锁</td></tr><tr><td>锁（lock）</td><td>同一时间只允许一个执行者改动</td><td>RLock 管线程，flock 管进程，不能互相替代</td></tr><tr><td>原子操作</td><td>要么全做完、要么完全没发生</td><td>不是「很快」，而是「不会看到中间态」</td></tr><tr><td>进程 / 线程</td><td>进程有独立内存；线程共享内存</td><td>多线程不等于多进程，锁的范围不同</td></tr><tr><td>worktree</td><td>同一个仓库的另一个工作目录</td><td>只是目录隔离，不是安全隔离</td></tr><tr><td>cron</td><td>按时间表达式触发任务</td><td>本教程是进程内轮询，退出/休眠不执行</td></tr><tr><td>MCP</td><td>让外部服务声明并调用工具的协议</td><td>本教程 s14 是内存 mock，没有真实传输</td></tr><tr><td>mock</td><td>返回固定结果的假实现，用于离线演示</td><td>不等于「简化版真实现」</td></tr><tr><td>runner</td><td>执行一步模型的封装（mock 或真实）</td><td>真实 runner 需要 client 和 model</td></tr><tr><td>schema</td><td>对参数/输出结构的约定</td><td>不是运行时校验器；本教程有轻量校验</td></tr><tr><td>journal</td><td>每步结果的追加日志，可据此续跑</td><td>不是缓存；key 不同就不会复用</td></tr><tr><td>注入（inject）</td><td>把提醒、通知、请求塞进上下文</td><td>不是修改 system prompt</td></tr></tbody>
+      </table>
+    </div>
+    <p class="gloss-note">共 28 条。遇到新术语，先在首次出现处解释一句，再在文中用简称。</p>
+  </article>
+</main>
+</div>
+
+<div class="toc-panel" id="tocPanel" hidden>
+  <div class="toc-sheet" role="dialog" aria-modal="true" aria-labelledby="tocTitle">
+    <button class="close" id="tocClose" type="button" aria-label="关闭目录">×</button>
+    <h2 id="tocTitle">目录</h2>
+    <nav aria-label="章节目录（移动端）"><a href="./index.html"><span>00</span>导读</a>
+<a href="./s01.html"><span>01</span>一个循环就够了</a>
+<a href="./s02.html"><span>02</span>加工具只加一行</a>
+<a href="./s03.html"><span>03</span>执行前先过三道闸</a>
+<a href="./s04.html"><span>04</span>挂在循环上，不写进循环里</a>
+<a href="./s05.html"><span>05</span>先列清单再动手</a>
+<a href="./s06.html"><span>06</span>子任务给一段干净上下文</a>
+<a href="./s07.html"><span>07</span>知识用到时再加载</a>
+<a href="./s08.html"><span>08</span>上下文满了先腾地方</a>
+<a href="./s09.html"><span>09</span>跨会话记住该记的</a>
+<a href="./s10.html"><span>10</span>任务落盘，进度可恢复</a>
+<a href="./s11.html"><span>11</span>慢操作丢后台</a>
+<a href="./s12.html"><span>12</span>到点自己开工</a>
+<a href="./s13.html"><span>13</span>多个 Agent 抢任务</a>
+<a href="./s14.html"><span>14</span>工具改由外部提供</a>
+<a href="./s15.html"><span>15</span>把前面的机制装进一个循环</a>
+<a href="./s16.html"><span>16</span>单步交给模型，编排交给脚本</a>
+<a href="./s17.html"><span>17</span>模型说完了不算完</a>
+<a href="./index.html#outro"><span>18</span>学完之后</a></nav>
+  </div>
+</div>
+<script src="./assets/app.js" defer></script>
+</body>
+</html>

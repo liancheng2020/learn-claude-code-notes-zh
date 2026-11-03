@@ -383,6 +383,7 @@ FOOTER = (
     f'<footer>本教程基于 <a href="{UPSTREAM}/tree/{COMMIT}" target="_blank" rel="noreferrer">'
     f'shareAI-lab/learn-claude-code</a> @ <code>{COMMIT_SHORT}</code>（{COMMIT_DATE}，MIT License）。'
     f'代码片段版权归原作者，讲解文字为本站新增。'
+    f'<a href="./glossary.html">术语表</a> · '
     f'<a href="./LICENSE.html">许可与来源</a>。</footer>'
 )
 
@@ -483,6 +484,38 @@ def build_chapter(src: Source, idx: int, ch: dict) -> str:
                 ch["problem"][:120], body, nav=nav_files(ch["id"]))
 
 
+def build_glossary() -> str:
+    md = (HERE / "docs" / "glossary.md").read_text(encoding="utf-8")
+    rows = []
+    for line in md.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 3 and not all(set(c) <= set("-: ") for c in cells):
+            rows.append(cells)
+    head, body = rows[0], rows[1:]
+    thead = "".join(f"<th>{esc(c)}</th>" for c in head)
+    trs = "".join(
+        "<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>"
+        for row in body)
+    content = f"""
+  <article class="ch">
+    <div class="kicker">Glossary</div>
+    <h1>术语表</h1>
+    <p class="lead">笔记里反复出现的词，先在这里对齐；解释按本教程的用法，不是教科书定义。</p>
+    <div class="table-wrap">
+      <table class="gloss">
+        <thead><tr>{thead}</tr></thead>
+        <tbody>{trs}</tbody>
+      </table>
+    </div>
+    <p class="gloss-note">共 {len(body)} 条。遇到新术语，先在首次出现处解释一句，再在文中用简称。</p>
+  </article>"""
+    return page("术语表 · Learn Claude Code 大白话教程",
+                "本教程术语表：Harness、上下文、压缩、外置、锁、runner 等词的白话解释。",
+                content, nav=nav_files(None))
+
+
 def build_license() -> str:
     body = f"""
 <article class="ch">
@@ -534,6 +567,7 @@ def write_site(out: Path, src_root: Path) -> None:
     pages = {"index.html": build_index(src)}
     for i, ch in enumerate(CHAPTERS):
         pages[f"{ch['id']}.html"] = build_chapter(src, i, ch)
+    pages["glossary.html"] = build_glossary()
     pages["LICENSE.html"] = build_license()
     pages["404.html"] = pages["index.html"]
 
@@ -545,7 +579,7 @@ def write_site(out: Path, src_root: Path) -> None:
 
 
 def validate_site(out: Path) -> None:
-    required = ["index.html", "LICENSE.html", "404.html",
+    required = ["index.html", "glossary.html", "LICENSE.html", "404.html",
                 "assets/style.css", "assets/app.js", MARKER]
     required += [f"{ch['id']}.html" for ch in CHAPTERS]
     missing = [n for n in required if not (out / n).is_file()]
@@ -572,7 +606,7 @@ def build(out_arg: str, src_arg: str) -> None:
     finally:
         if tmp.exists():
             shutil.rmtree(tmp, ignore_errors=True)
-    print(f"built {len(CHAPTERS) + 3} pages into {out}")
+    print(f"built {len(CHAPTERS) + 4} pages into {out}")
     print(f"pinned {COMMIT}")
 
 

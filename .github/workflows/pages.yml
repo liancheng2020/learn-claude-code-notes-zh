@@ -39,6 +39,8 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: 产物检查
         run: python3 tests/check_site.py /tmp/site-check --src upstream
+      - name: 注解体检
+        run: python3 tests/lint_notes.py --src upstream
       - name: 浏览器交互回归
         run: python3 tests/ui_smoke.py --site /tmp/site-check
       - name: 与已提交 site 比对

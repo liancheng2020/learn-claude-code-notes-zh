@@ -117,7 +117,7 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .full .ch{margin-top:64px;padding-top:26px;border-top:1px solid var(--line)}
 .full .ch-head{padding-top:0}
 .ch-head{display:flex;gap:18px;align-items:flex-start;padding-top:6px}
-.num{font-family:var(--mono);font-size:13px;color:var(--accent);background:var(--accent-soft);
+.ch-head .num{font-family:var(--mono);font-size:13px;color:var(--accent);background:var(--accent-soft);
   border:1px solid var(--line);border-radius:10px;padding:2px 9px;margin-top:6px;flex:none}
 .ch-title h1,.ch-title h2{margin:0;font-size:28px;line-height:1.35;letter-spacing:-.01em;font-weight:700}
 .ch-title h1 small,.ch-title h2 small{display:block;font-size:12.5px;font-weight:500;color:var(--mid);
@@ -162,7 +162,7 @@ pre.sh{background:var(--code-bg);border:1px solid var(--line);border-radius:10px
 .tok.kw{color:#8b3fb8}
 .tok.str{color:#2f7d4f}
 .tok.com{color:#8a8f98;font-style:italic}
-.tok.num{color:#a1571a}
+.tok.num{color:#a1571a;background:none;border:0;border-radius:0;padding:0;margin:0}
 :root[data-theme="dark"] .tok.kw{color:#c9a3f5}
 :root[data-theme="dark"] .tok.str{color:#8fd6a8}
 :root[data-theme="dark"] .tok.com{color:#7d838d}
@@ -211,6 +211,13 @@ footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);color:v
   font-size:22px;cursor:pointer;padding:0 4px}
 body.toc-open{overflow:hidden}
 .outro{margin-top:40px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.gloss{width:100%;border-collapse:collapse;font-size:14px}
+.gloss th,.gloss td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.gloss th{background:var(--code-bg);font-size:12.5px;letter-spacing:.04em;color:var(--mid)}
+.gloss tr:last-child td{border-bottom:0}
+.gloss td:first-child{white-space:nowrap;font-weight:600;color:var(--ink)}
+.gloss-note{margin:14px 0 0;color:var(--mid);font-size:13px}
 .license{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font-size:13px;line-height:1.7;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .problem code{overflow-wrap:anywhere}
 

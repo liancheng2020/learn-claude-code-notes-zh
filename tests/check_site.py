@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 CHAPTERS = [f"s{i:02d}" for i in range(1, 18)]
-REQUIRED = ["index.html", "LICENSE.html", "404.html", ".lcc-build",
+REQUIRED = ["index.html", "glossary.html", "LICENSE.html", "404.html", ".lcc-build",
             "assets/style.css", "assets/app.js", "assets/favicon.ico",
             "assets/favicon.svg", "assets/apple-touch-icon.png", "robots.txt"]
 
@@ -94,7 +94,7 @@ def check_page(root, page, errors):
                 errors += fail(f"index.html 缺少入口 {cta}")
         if len(re.findall(r'class="card"', doc)) != 17:
             errors += fail("index.html 目录卡片不是 17 个")
-    if page.name not in ("index.html", "LICENSE.html", "404.html"):
+    if page.name not in ("index.html", "glossary.html", "LICENSE.html", "404.html"):
         if 'class="pager"' not in doc:
             errors += fail(f"{page.name} 缺少上一章/下一章")
         if page.name != "s01.html" and "上一章" not in doc:
