@@ -58,7 +58,7 @@ CH_B = [
         "idea": [
             "定义四个事件：用户提交、工具执行前、执行后、准备收工；",
             "每个事件挂一串回调，由 register_hook 注册；",
-            "回调返回 None 表示「继续」，返回内容表示「拦截/注入」；",
+            "回调返回 None 继续；非 None 只停止后续回调，是否影响执行由调用方决定；",
             "循环只调用 trigger_hooks，不知道具体有哪些扩展。",
         ],
         "rel": "s04_hooks/code.py",
@@ -68,7 +68,7 @@ CH_B = [
             "notes": [
                          {"at": "HOOKS = {", "text": "四个事件、四个列表。hook 的全部魔法就是「事件发生时，按顺序调用注册过的函数」。"},
                          {"at": "def register_hook(event: str, callback):", "text": "注册 = 往列表里塞一个函数。没有任何框架，也没有元类。"},
-                         {"at": "result = callback(*args)", "text": "返回值有语义：非 None 就表示「拦截」，后面的 hook 不再执行。这条约定让 hook 既能观察也能干预。"},
+                         {"at": "result = callback(*args)", "text": "非 None 只停止这条事件链；PreToolUse 用它拦工具，Stop 用它续一轮，PostToolUse 丢弃。"},
                          {"at": "def permission_hook(block):", "text": "s03 的权限代码原样搬进来了。行为完全一样，区别只是它不再写死在循环里，可以随时摘掉。"},
                          {"at": "register_hook(\"Stop\", summary_hook)", "text": "看这五行注册，就知道系统里有哪些扩展点——比翻循环体清楚多了。"},
                          {"at": "force = trigger_hooks(\"Stop\", messages)", "text": "Stop hook 可以返回一段文字，表示「别收工，再跑一轮」。这是「模型想停但事没做完」的第一种解法。"},
@@ -87,7 +87,8 @@ CH_B = [
         }],
         "points": [
             ("hook = 事件 + 回调", "循环只负责触发事件，不知道谁在监听。"),
-            ("返回值即语义", "None 继续，非 None 拦截或注入——一条约定撑起所有扩展。"),
+            ("停链不等于拦截", "非 None 只停后续回调；PreToolUse 用它拦工具，Stop 用它续一轮，PostToolUse 只观察。"),
+            ("执行前后要分清", "PreToolUse 在工具前能拦；PostToolUse 在工具后，返回值没人接。"),
             ("权限可以搬家", "s03 的逻辑原样搬进 PreToolUse，说明「机制」和「策略」分开了。"),
             ("Stop 可以拒绝收工", "这是后面 s17 独立判断器的雏形。"),
         ],
@@ -95,6 +96,7 @@ CH_B = [
             "在 hook 里做联网、跑模型这类重活，每一步都会被拖慢一次。",
             "一个 hook 抛异常，整条循环就挂了——hook 内部要自己 try。",
             "Stop hook 返回了内容却忘了 continue，等于白说。",
+            "以为 PostToolUse 能阻止工具：它执行后才跑，返回值没人接。",
         ],
         "try": "加一个 PreToolUse hook，把每次 bash 命令写进临时日志文件；再加一个 PostToolUse hook 统计工具调用次数。验收：日志文件里出现每条命令，且 agent_loop 一个字没改（用 git diff 确认）。",
     },
@@ -161,7 +163,7 @@ CH_B = [
             "提醒追加在工具结果里，模型偶尔会忽略；它不是强约束。",
             "一次提交超过 20 条，会直接返回 `Error: Max 20 todos allowed`。",
         ],
-        "try": "把 `if rounds_since_todo >= 3:` 改成 `>= 1`，再做一件需要五六步的事。验收：每次工具结果后都能看到 `<reminder>Update your todos.</reminder>`，模型调用 todo_write 的次数明显变多；改回 3 再对比一次。",
+        "try": "步骤：把 `if rounds_since_todo >= 3:` 改成 `>= 1`；为看清计数，在 `rounds_since_todo = ...` 这一行后面临时加 `print(rounds_since_todo)`（验收后删除）；启动 s05，让它做一件需要几步的事。确定性验收：`git diff` 只改阈值和临时 print；没有调用 todo_write 的轮次，计数每次加 1。观察项：终端不会直接显示 reminder（它注入 messages）；模型是否调用 todo_write、调用几次都不稳定，不作为通过标准。常见失败：模型主动调 todo_write 导致计数清零、任务太短没有多轮、改错比较符、忘记改回。",
     },
     {
         "id": "s06", "no": "06",

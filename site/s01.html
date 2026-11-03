@@ -70,7 +70,7 @@
 </div>
   <div class="points"><h2>记住这几条</h2><div class="point-grid"><div class="point"><b>四步循环</b><p>问模型 → 执行工具 → 回填结果 → 再问。本课程后面每一章都沿用这个骨架。</p></div><div class="point"><b>停止 = 模型不再要工具</b><p>代码不判断任务完成度，这是 s17 Goal Loop 要补的洞。</p></div><div class="point"><b>模型无状态</b><p>messages 就是它的全部记忆，每轮完整传回，所以上下文管理（s08）才重要。</p></div><div class="point"><b>错误也是结果</b><p>工具失败返回字符串而不是抛异常，模型才能读到并自己纠错。</p></div></div></div>
   <div class="pitfalls"><h2>容易踩的坑</h2><ul><li>回填 tool_result 时漏了 tool_use_id，或 id 对不上，API 会直接 400。</li><li>忘了设 timeout 和输出截断，一条 `yes` 就能让会话一直转下去。</li><li>把 tool_result 塞进 assistant 消息里，协议不认——它必须放在 user 消息中。</li></ul></div>
-  <div class="try"><h2>动手改一改</h2><p>把 SYSTEM 里的 "Act, don't explain." 删掉，再问「看看这个目录有什么」。验收：回答明显变长、开始解释而不是直接调用 bash。改完记得改回来。</p></div>
+  <div class="try"><h2>动手改一改</h2><p>步骤：只改 s01 的 SYSTEM，删掉 `Act, don't explain.`；启动 `python s01_agent_loop/code.py`，问「看看这个目录有什么」，看完把这句话加回。确定性验收：`git diff` 只包含 SYSTEM 这一行改动，程序能进入 REPL，且本轮对话没有 Python 异常。观察项：回答可能变长、先解释再调工具，也可能不变——模型行为不稳定，不作为通过/失败标准。常见失败：`.env` 没填 ANTHROPIC_API_KEY 或 MODEL_ID、模型名无权限、改错字符串、忘记改回。</p></div>
 </article><nav class="pager" aria-label="上下章"><span></span><a href="./s02.html" style="text-align:right"><span class="lbl">下一章</span>02 加工具只加一行</a></nav><footer>本教程基于 <a href="https://github.com/shareAI-lab/learn-claude-code/tree/7226f555d48900076eba126acf37c9ed5f002b5d" target="_blank" rel="noreferrer">shareAI-lab/learn-claude-code</a> @ <code>7226f55</code>（2026-10-27，MIT License）。代码片段版权归原作者，讲解文字为本站新增。<a href="./glossary.html">术语表</a> · <a href="./LICENSE.html">许可与来源</a>。</footer>
 </main>
 </div>

@@ -137,7 +137,7 @@ CH_C = [
             "输出无限增长：tail -f 这种命令会把内存吃满，必须有大小上限。",
             "collect 调用太晚，通知堆了几十条，一次全塞给模型。",
         ],
-        "try": "让它后台跑 `sleep 5 && echo done`，同时继续问它别的问题。验收：5 秒后收到一条 `<task_notification>`，里面能看到 task_id 和摘要，而主对话在这 5 秒里没有卡住。",
+        "try": "步骤：启动 s11，让模型后台跑 `sleep 5 && echo done`（如果没进后台，明确要求 `run_in_background=true`）；任务启动后先问一个别的问题，或在 5 秒后再发任意一句话。确定性验收：`inject_background_results(messages)` 是 `while True` 第一行；任务完成后，通知只在下一次循环开头被 `collect` 取走——停在输入提示符干等，不会出现通知。观察项：通知里的 task_id、status、command 和前 500 字摘要。常见失败：模型没把命令放后台、Windows 没有 `sleep`、任务在下一轮前已结束（下一轮才收到）、只等不发送新消息。",
     },
     {
         "id": "s12", "no": "12", "advanced": True,
@@ -290,7 +290,7 @@ CH_C = [
                 "notes": [
                              {"at": "HOOKS = {", "text": "扩展点注册表：四个事件，每个挂一串回调。"},
                              {"at": "def register_hook(event: str, callback):", "text": "注册就是 append。没有任何框架。"},
-                             {"at": "result = callback(*args)", "text": "PreToolUse 和 Stop 的非 None 返回会生效；PostToolUse 的返回值被丢弃。"},
+                             {"at": "result = callback(*args)", "text": "PreToolUse 的返回值拦工具；Stop 的返回值续一轮；PostToolUse 丢弃。"},
                              {"at": "register_hook(\"PreToolUse\", permission_hook)", "text": "权限检查是一个 hook，不是写死在循环里的 if。想换策略，换这一行。"},
                              {"at": "register_hook(\"Stop\", stop_hook)", "text": "收工前还能插一脚；本版这里只打印统计，不阻止退出。"},
                              {"at": "if (block.name.startswith(\"mcp__\")", "text": "MCP 工具默认要确认，除非宿主策略放行。"},
@@ -326,7 +326,7 @@ CH_C = [
                              {"at": "blocked = trigger_hooks(\"PreToolUse\", block)", "text": "权限检查在分发之前，而且对每个 tool_use 都跑一次。"},
                              {"at": "if should_run_background(block.name, block.input):", "text": "慢命令转后台，立刻返回一个 task_id；真正结果走通知。"},
                              {"at": "handler = handlers.get(block.name)", "text": "从工具池里查 handler。查不到也不会崩，call_tool_handler 会返回错误字符串。"},
-                             {"at": "trigger_hooks(\"PostToolUse\", block, output)", "text": "执行后再给扩展点一次机会（大输出告警就是在这一步）。"},
+                             {"at": "trigger_hooks(\"PostToolUse\", block, output)", "text": "执行后才跑；返回值丢弃，只能观察（大输出告警）。"},
                              {"at": "if block.name == \"todo_write\":", "text": "更新计数：调用了就清零，没调用就加一。"},
                              {"at": "messages.append({\"role\": \"user\", \"content\": build_user_content(results)})", "text": "结果回填，进入下一圈。整个 Harness 的「一轮」在这里闭合。"},
                              {"at": "output = call_tool_handler(handler, block.input, block.name)", "text": "handler 抛异常也会被收成字符串，循环不中断。"},
@@ -415,7 +415,7 @@ CH_C = [
             "以为改了 prompt 还能命中缓存：key 含 kind/label/prompt/schema，改了就会重跑。",
             "以为后台任务会主动叫醒模型：只有主循环每轮开头 collect 才注入通知。",
         ],
-        "try": "离线练习：先跑 `python s16_workflow_runtime/code.py demo`，记下输出的 agents 数和 journal 条目数；再跑 `python s16_workflow_runtime/code.py resume`。验收：第二次的 agents 数小于第一次，且 journal 里能看到被复用的记录——全程不产生模型费用。想看真实调用，只能用无参数进入 CLI（会安装 AnthropicAgentRunner，每次请求都可能计费），不要靠改类名。",
+        "try": "步骤：在 `s16_workflow_runtime/` 目录跑 `python code.py demo`，记下输出的 `agents` 数、`tokens` 和 `journal=.runtime/<runId>.journal.jsonl`；再跑 `python code.py resume`。确定性验收：两次退出码为 0；resume 打印 `resuming <runId>`；agents 数小于第一次；tokens 是 Mock 按字符估算的数值，不代表真实计费；journal 文件存在，里面能查到第一次的记录；resume 的进度里会出现 cached。观察项：result 里的具体条目和摘要文字。常见失败：在错误 cwd 运行（找不到 s15）、没有先 demo 就 resume、删了 `.runtime`、无参数进入 CLI（会走真实 runner，可能计费）。",
     },
     {
         "id": "s17", "no": "17", "advanced": True,

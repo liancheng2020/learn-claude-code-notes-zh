@@ -35,13 +35,15 @@ cd learn-claude-code
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-printf 'ANTHROPIC_API_KEY=\nMODEL_ID=\n' &gt; .env
+[ -f .env ] || printf 'ANTHROPIC_API_KEY=\nMODEL_ID=\n' &gt; .env
 python s01_agent_loop/code.py</pre>
   <p><b>从仓库根目录运行</b>：s07 在 cwd 下找 <code>skills/</code>，s08 把记录写到
   <code>./.transcripts/</code>，文件工具都以启动目录为根。</p>
-  <p><b>密钥只放本机 <code>.env</code></b>，不要贴进对话或截图。模型名按你账号实际权限填，
-  教程里的示例名不保证可用。<code>ANTHROPIC_BASE_URL</code> 只换地址，服务仍须兼容
-  Anthropic Messages 协议。</p>
+  <p><b>密钥只放本机 <code>.env</code></b>，不要贴进对话或截图。上面的命令只在
+  <code>.env</code> 不存在时创建它，已存在不会覆盖；创建后打开填写
+  <code>ANTHROPIC_API_KEY</code> 和 <code>MODEL_ID</code>（模型名按你账号实际权限填）。
+  Windows 请在资源管理器或编辑器中手动新建 <code>.env</code>。
+  <code>ANTHROPIC_BASE_URL</code> 只换地址，服务仍须兼容 Anthropic Messages 协议。</p>
   <p><b>这些示例会真的执行命令、读写文件、调用模型（产生费用）。</b>建议在干净的虚拟机、
   容器或专门目录里练手，不要在有密钥和重要数据的目录里试。教程练习不需要关闭权限检查。</p>
 </details>
@@ -124,7 +126,7 @@ CH_A = [
             "忘了设 timeout 和输出截断，一条 `yes` 就能让会话一直转下去。",
             "把 tool_result 塞进 assistant 消息里，协议不认——它必须放在 user 消息中。",
         ],
-        "try": "把 SYSTEM 里的 \"Act, don't explain.\" 删掉，再问「看看这个目录有什么」。验收：回答明显变长、开始解释而不是直接调用 bash。改完记得改回来。",
+        "try": "步骤：只改 s01 的 SYSTEM，删掉 `Act, don't explain.`；启动 `python s01_agent_loop/code.py`，问「看看这个目录有什么」，看完把这句话加回。确定性验收：`git diff` 只包含 SYSTEM 这一行改动，程序能进入 REPL，且本轮对话没有 Python 异常。观察项：回答可能变长、先解释再调工具，也可能不变——模型行为不稳定，不作为通过/失败标准。常见失败：`.env` 没填 ANTHROPIC_API_KEY 或 MODEL_ID、模型名无权限、改错字符串、忘记改回。",
     },
     {
         "id": "s02", "no": "02", "full": True,
