@@ -412,7 +412,7 @@ def page(title: str, desc: str, body: str, nav: str | None = None,
 <a id="top"></a>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="./index.html"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></a>
+    <span class="brand"><span class="b1">Learn Claude Code</span><span class="b2"> · 大白话教程</span></span>
     <button class="toc-btn" id="tocBtn" type="button" aria-expanded="false" aria-controls="tocPanel">目录</button>
     <div class="actions">
       <a class="plain" href="{TUTORIAL_REPO}" target="_blank" rel="noreferrer">本站源码</a>
